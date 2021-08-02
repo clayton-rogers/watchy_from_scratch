@@ -11,10 +11,11 @@
 #include <DSEG7_Classic_Bold_53.h> // Time
 #include "Seven_Segment10pt7b.h"   // DoW
 #include "DSEG7_Classic_Bold_25.h" // Date
+#include "DSEG7_Classic_Regular_39.h" // Temp
 #include "icons.h"
 
 //#include "DSEG7_Classic_Regular_15.h"
-//#include "DSEG7_Classic_Regular_39.h"
+
 //#include "icons.h"
 
 
@@ -25,6 +26,7 @@ static GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display(GxEPD2_154_D67(
 static DS3232RTC RTC(false);
 static tmElements_t currentTime;
 static uint32_t step_count;
+static int temperature_c;
 
 RTC_DATA_ATTR BMA423 sensor;
 
@@ -162,6 +164,7 @@ static void watch_init() {
     RTC.alarm(ALARM_2); // reset alarm flag
     RTC.read(currentTime);
     step_count = sensor.getCounter();
+    temperature_c = RTC.temperature() / 4;
 }
 
 static void deep_sleep() {
@@ -223,6 +226,37 @@ static void display_watchface(bool partial_refresh) {
 
     // =================================
     // Draw Weather
+    display.setFont(&DSEG7_Classic_Regular_39);
+    display.getTextBounds(String(temperature_c), 100, 150, &x1, &y1, &w, &h);
+    display.setCursor(155 - w, 150);
+    display.println(temperature_c);
+    display.drawBitmap(165, 110, celsius, 26, 20, GxEPD_BLACK);
+
+    //int16_t weatherConditionCode = 800;
+    const unsigned char* weatherIcon = sunny;
+    ////https://openweathermap.org/weather-conditions
+    //if(weatherConditionCode > 801){//Cloudy
+    //weatherIcon = cloudy;
+    //}else if(weatherConditionCode == 801){//Few Clouds
+    //weatherIcon = cloudsun;
+    //}else if(weatherConditionCode == 800){//Clear
+    //weatherIcon = sunny;
+    //}else if(weatherConditionCode >=700){//Atmosphere
+    //weatherIcon = cloudy;
+    //}else if(weatherConditionCode >=600){//Snow
+    //weatherIcon = snow;
+    //}else if(weatherConditionCode >=500){//Rain
+    //weatherIcon = rain;
+    //}else if(weatherConditionCode >=300){//Drizzle
+    //weatherIcon = rain;
+    //}else if(weatherConditionCode >=200){//Thunderstorm
+    //weatherIcon = rain;
+    //}else
+    //return;
+
+    const uint8_t WEATHER_ICON_WIDTH = 48;
+    const uint8_t WEATHER_ICON_HEIGHT = 32;
+    display.drawBitmap(145, 158, weatherIcon, WEATHER_ICON_WIDTH, WEATHER_ICON_HEIGHT, GxEPD_BLACK);
 
     // =================================
     // Draw Battery
