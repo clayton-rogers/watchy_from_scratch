@@ -1,3 +1,4 @@
+#pragma once
 
 //pins
 #define SDA 21
