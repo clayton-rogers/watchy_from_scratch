@@ -1,81 +1,134 @@
 #include "watchy_main.h"
 
 #include <Arduino.h>
-#include <GxEPD2_BW.h>
-#include <Fonts/FreeMonoBold9pt7b.h>
+#include <Wire.h>
+#include <GxEPD2_BW.h> // screen
+#include <DS3232RTC.h> // RTC
+#include <bma.h>       // accelerometer
+
+// Fonts
+#include <DSEG7_Classic_Bold_53.h> // Time
+#include "Seven_Segment10pt7b.h"   // DoW
+#include "DSEG7_Classic_Bold_25.h" // Date
+
+//#include "DSEG7_Classic_Regular_15.h"
+//#include "DSEG7_Classic_Regular_39.h"
+//#include "icons.h"
+
 
 #include "pin_def.h"
+#define YEAR_OFFSET 1970
 
 static GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display(GxEPD2_154_D67(CS, DC, RESET, BUSY));
-RTC_DATA_ATTR bool first_time = true;
-RTC_DATA_ATTR int counter = 0;
-RTC_DATA_ATTR unsigned long last_total_time = 0;
+static DS3232RTC RTC(false);
+static tmElements_t currentTime;
 
-static unsigned long init_time;
+static void first_time_rtc_config() {
+    RTC.squareWave(SQWAVE_NONE); //disable square wave output
+    RTC.setAlarm(ALM2_EVERY_MINUTE, 0, 0, 0, 0); //alarm wakes up Watchy every minute
+    RTC.alarmInterrupt(ALARM_2, true); //enable alarm interrupt
+    RTC.read(currentTime);
+}
+
+static void first_time_bma_config() {
+    // TODO
+}
+
+static void first_time_watch_init() {
+    // nothing for now
+    first_time_rtc_config();
+    first_time_bma_config();
+}
 
 static void watch_init() {
     display.init(0, false);
     display.setFullWindow();
+    Wire.begin(SDA, SCL); // i2c for RTC and Accel
+    RTC.alarm(ALARM_2); // reset alarm flag
+    RTC.read(currentTime);
 }
 
 static void deep_sleep() {
     display.hibernate();
+    esp_sleep_enable_ext0_wakeup(RTC_PIN, 0); //enable deep sleep wake on RTC interrupt
     esp_sleep_enable_ext1_wakeup(BTN_PIN_MASK, ESP_EXT1_WAKEUP_ANY_HIGH); //enable deep sleep wake on button press
     esp_deep_sleep_start();
 }
 
-static void display_screen(int input) {
+static void display_watchface(bool partial_refresh) {
     display.fillScreen(GxEPD_WHITE);
     display.setTextColor(GxEPD_BLACK);
-    display.setFont(&FreeMonoBold9pt7b);
-    display.setCursor(0,18);
-    display.print("Hello ");
-    display.println(counter++);
-    display.println(init_time);
-    display.println(last_total_time);
-    display.println(input);
 
-
-    display.display(first_time ? false : true);
-}
-
-static void display_watchface(bool partial_refresh) {
-    
-}
-
-volatile static int gate = 1;
-volatile static int output = 0;
-void task(void * pvParameters) {
-    while (gate) {
-        output = 1;
+    // =================================
+    // Draw Time
+    display.setFont(&DSEG7_Classic_Bold_53);
+    display.setCursor(5, 53+5);
+    if(currentTime.Hour < 10){
+        display.print("0");
     }
+    display.print(currentTime.Hour);
+    display.print(":");
+    if(currentTime.Minute < 10){
+        display.print("0");
+    }
+    display.println(currentTime.Minute);
+
+    // =================================
+    // Draw Date
+    display.setFont(&Seven_Segment10pt7b);
+
+    int16_t  x1, y1;
+    uint16_t w, h;
+
+    String dayOfWeek = dayStr(currentTime.Wday);
+    display.getTextBounds(dayOfWeek, 5, 85, &x1, &y1, &w, &h);
+    display.setCursor(85 - w, 85);
+    display.println(dayOfWeek);
+
+    String month = monthShortStr(currentTime.Month);
+    display.getTextBounds(month, 60, 110, &x1, &y1, &w, &h);
+    display.setCursor(85 - w, 110);
+    display.println(month);
+
+    display.setFont(&DSEG7_Classic_Bold_25);
+    display.setCursor(5, 120);
+    if(currentTime.Day < 10){
+    display.print("0");
+    }
+    display.println(currentTime.Day);
+    display.setCursor(5, 150);
+    display.println(currentTime.Year + YEAR_OFFSET);// offset from 1970, since year is stored in uint8_t
+
+    // =================================
+    // Draw Steps
+
+    // =================================
+    // Draw Weather
+
+    // =================================
+    // Draw Battery
+
+    display.display(partial_refresh);
 }
 
 void run_watch() {
-    init_time = micros();
-    watch_init();
-    display_screen(0);
+    esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause(); //get wake up reason
 
-    TaskHandle_t xHandle = NULL;
-    BaseType_t xReturned = xTaskCreate(
-        task,
-        "second",
-        configMINIMAL_STACK_SIZE,
-        NULL,
-        configMAX_PRIORITIES,
-        &xHandle);
-
-    if (xReturned == pdPASS) {
-        gate = 1;
-        while (!output) {
-            NOP();
-        }
-        vTaskDelete(xHandle);
+    switch (wakeup_reason) {
+        case ESP_SLEEP_WAKEUP_EXT0: // RTC Alarm
+            watch_init();
+            display_watchface(true);
+            break;
+        case ESP_SLEEP_WAKEUP_EXT1: // Button press
+            // TODO
+            watch_init();
+            display_watchface(true);
+            break;
+        default:
+            first_time_watch_init();
+            display_watchface(false);
+            break;
     }
 
-    display_screen(1);
-
-    first_time = false;
-    last_total_time = micros();
     deep_sleep();
 }
