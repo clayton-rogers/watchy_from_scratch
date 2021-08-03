@@ -339,7 +339,7 @@ void handle_check_battery() {
     }
 }
 
-void handle_vibrate() {
+static void handle_vibrate() {
     display.fillScreen(GxEPD_BLACK);
     display.setFont(&FreeMonoBold9pt7b);
     display.setTextColor(GxEPD_WHITE);
@@ -358,11 +358,126 @@ void handle_vibrate() {
     }
 }
 
-void null_menu() {}
+static void draw_set_time(tmElements_t time, int index) {
+    display.fillScreen(GxEPD_BLACK);
+    display.setTextColor(GxEPD_WHITE);
+    display.setFont(&DSEG7_Classic_Bold_53);
+
+    display.setCursor(5, 80);
+    if(time.Hour < 10){
+        display.print("0");
+    }
+    display.print(time.Hour);
+
+    display.print(":");
+
+    display.setCursor(108, 80);
+    if(time.Minute < 10){
+        display.print("0");
+    }
+    display.print(time.Minute);
+
+    display.setFont(&FreeMonoBold9pt7b);
+    display.setCursor(45, 150);
+    display.print(time.Year + YEAR_OFFSET);
+
+    display.print("/");
+
+    if(time.Month < 10){
+        display.print("0");
+    }
+    display.print(time.Month);
+
+    display.print("/");
+
+    if(time.Day < 10){
+        display.print("0");
+    }
+    display.print(time.Day);
+
+    // Draw edit index
+    {
+        const int x_offset[] = {50, 150, 70, 110, 145};
+        const int y_offset[] = {90, 90, 160, 160, 160};
+        const int x = x_offset[index];
+        const int y = y_offset[index];
+
+        display.fillTriangle(x, y, x - 8, y + 8, x + 8, y + 8, GxEPD_WHITE);
+    }
+
+    display.display(true);
+}
+
+static void normalize_datetime(tmElements_t* tm) {
+    if (tm->Month < 1)     tm->Month = 12;
+    if (tm->Month > 12)    tm->Month = 1;
+    if (tm->Day < 1)       tm->Day = 31;
+    if (tm->Day > 31)      tm->Day = 1;
+    if (tm->Hour == 255)   tm->Hour = 23;
+    if (tm->Hour > 23)     tm->Hour = 0;
+    if (tm->Minute == 255) tm->Minute = 59;
+    if (tm->Minute > 59)   tm->Minute = 0;
+    if (tm->Second == 255) tm->Second = 59;
+    if (tm->Second > 59)   tm->Second = 0;
+}
+
+static void handle_set_time() {
+
+    Button b = Button::NONE;
+    tmElements_t new_time = currentTime;
+    new_time.Second = 0;
+    enum class Edit_Index {
+        HOUR,
+        MINUTE,
+        YEAR,
+        MONTH,
+        DAY,
+        MAX,
+    };
+    Edit_Index edit_index = Edit_Index::HOUR;
+    while (1) {
+        if (b == Button::MENU) {
+            // dirty hack to increment enum class
+            edit_index = (Edit_Index)((int)(edit_index) + 1);
+            if (edit_index == Edit_Index::MAX) {
+                RTC.set(makeTime(new_time));
+                break;
+            }
+        }
+        if (b == Button::BACK) {
+            if (edit_index == Edit_Index::HOUR) {
+                break; // exit without setting time
+            }
+            edit_index = (Edit_Index)((int)(edit_index) - 1);
+        }
+        if (b == Button::UP || b == Button::DOWN) {
+            int inc = 0;
+            if (b == Button::UP) {
+                inc = 1;
+            } else {
+                inc = -1;
+            }
+            switch (edit_index) {
+                case Edit_Index::HOUR:   new_time.Hour+=inc; break;
+                case Edit_Index::MINUTE: new_time.Minute+=inc; break;
+                case Edit_Index::YEAR:   new_time.Year+=inc; break;
+                case Edit_Index::MONTH:  new_time.Month+=inc; break;
+                case Edit_Index::DAY:    new_time.Day+=inc; break;
+                case Edit_Index::MAX: break;
+            }
+            normalize_datetime(&new_time);
+        }
+        draw_set_time(new_time, (int)edit_index);
+
+        b = get_next_button();
+    }
+}
+
+static void null_menu() {}
 
 typedef void(*menu_ptr)();
 static const char* menuItems[] = {"Check Battery", "Vibrate Motor", "====", "Set Time", "====", "===="};
-menu_ptr menu_handlers[] = {handle_check_battery, handle_vibrate, null_menu, null_menu, null_menu, null_menu };
+menu_ptr menu_handlers[] = {handle_check_battery, handle_vibrate, null_menu, handle_set_time, null_menu, null_menu };
 #define MENU_HEIGHT 30
 #define MENU_LENGTH 6
 static void draw_menu(int menu_index, bool partial_refresh) {
