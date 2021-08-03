@@ -31,6 +31,8 @@ static uint32_t step_count;
 static int temperature_c;
 
 RTC_DATA_ATTR BMA423 sensor;
+RTC_DATA_ATTR int steps_offset;
+
 
 static void first_time_rtc_config() {
     RTC.squareWave(SQWAVE_NONE); //disable square wave output
@@ -164,7 +166,7 @@ static void watch_init() {
     display.setFullWindow();
     RTC.alarm(ALARM_2); // reset alarm flag
     RTC.read(currentTime);
-    step_count = sensor.getCounter();
+    step_count = sensor.getCounter() + steps_offset;
     temperature_c = RTC.temperature() / 4;
 }
 
@@ -473,11 +475,87 @@ static void handle_set_time() {
     }
 }
 
+
+static const int STEPS_WIDTH = 5;
+static void draw_set_steps(const int steps, const int index) {
+    display.fillScreen(GxEPD_BLACK);
+    display.setTextColor(GxEPD_WHITE);
+
+    // Print heading
+    display.setFont(&FreeMonoBold9pt7b);
+    display.setCursor(20, 50);
+    display.print("Set Steps:");
+
+    // Print the actual step count with leadin zeros
+    display.setFont(&DSEG7_Classic_Bold_25);
+    display.setCursor(20,100);
+
+    int temp_steps = steps / 10;
+    for (int i = 0; i < STEPS_WIDTH-1; ++i) {
+        if (temp_steps == 0) {
+            display.print("0");
+        } else {
+            temp_steps /= 10;
+        }
+    }
+    display.print(steps);
+
+    // Print the index indicator
+    const int x_offset[] = { 30, 50, 75, 95, 115 };
+    const int y = 110;
+    const int x = x_offset[index];
+
+    display.fillTriangle(x, y, x - 8, y + 8, x + 8, y + 8, GxEPD_WHITE);
+
+    display.display(true);
+}
+
+static void handle_set_steps() {
+    Button b = Button::NONE;
+    int index = 0;
+    int local_steps = steps_offset;
+    while (1) {
+        if (b == Button::MENU) {
+            index++;
+            if (index == STEPS_WIDTH) {
+                steps_offset = local_steps;
+                break; // save and exit
+            }
+        }
+        if (b == Button::BACK) {
+            index--;
+            if (index == -1) {
+                break; // exit steps menu
+            }
+        }
+        if (b == Button::UP || b == Button::DOWN) {
+            int position = STEPS_WIDTH - index - 1;
+            int add_val = 1;
+            while (position-- > 0) {
+                add_val *= 10;
+            }
+            if (b == Button::UP) {
+                local_steps += add_val;
+            } else {
+                local_steps -= add_val;
+                if (local_steps < 0) local_steps += add_val;
+            }
+        }
+
+        draw_set_steps(local_steps, index);
+        b = get_next_button();
+    }
+
+    step_count = sensor.getCounter() + steps_offset;
+}
+
 static void null_menu() {}
 
 typedef void(*menu_ptr)();
-static const char* menuItems[] = {"Check Battery", "Vibrate Motor", "====", "Set Time", "====", "===="};
-menu_ptr menu_handlers[] = {handle_check_battery, handle_vibrate, null_menu, handle_set_time, null_menu, null_menu };
+static const char* menuItems[] =
+    {"Check Battery", "Vibrate Motor", "Set Steps", "Set Time", "====", "===="};
+menu_ptr menu_handlers[] =
+    {handle_check_battery, handle_vibrate, handle_set_steps, handle_set_time, null_menu, null_menu };
 #define MENU_HEIGHT 30
 #define MENU_LENGTH 6
 static void draw_menu(int menu_index, bool partial_refresh) {
