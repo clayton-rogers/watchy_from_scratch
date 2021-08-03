@@ -339,11 +339,30 @@ void handle_check_battery() {
     }
 }
 
+void handle_vibrate() {
+    display.fillScreen(GxEPD_BLACK);
+    display.setFont(&FreeMonoBold9pt7b);
+    display.setTextColor(GxEPD_WHITE);
+    display.setCursor(70, 80);
+    display.println("Buzz!");
+    display.display(true);
+
+    pinMode(VIB_MOTOR_PIN, OUTPUT);
+    bool motorOn = false;
+    int length = 20;
+    uint32_t interval_ms = 100;
+    for(int i = 0; i < length; ++i){
+        motorOn = !motorOn;
+        digitalWrite(VIB_MOTOR_PIN, motorOn);
+        delay(interval_ms);
+    }
+}
+
 void null_menu() {}
 
 typedef void(*menu_ptr)();
 static const char* menuItems[] = {"Check Battery", "Vibrate Motor", "====", "Set Time", "====", "===="};
-menu_ptr menu_handlers[] = {handle_check_battery, null_menu, null_menu, null_menu, null_menu, null_menu };
+menu_ptr menu_handlers[] = {handle_check_battery, handle_vibrate, null_menu, null_menu, null_menu, null_menu };
 #define MENU_HEIGHT 30
 #define MENU_LENGTH 6
 static void draw_menu(int menu_index, bool partial_refresh) {
