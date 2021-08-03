@@ -6,12 +6,14 @@
 #include <DS3232RTC.h> // RTC
 #include <bma.h>       // accelerometer
 #include "battery.h"   // battery voltage monitor
+#include "button.h"
 
 // Fonts
 #include <DSEG7_Classic_Bold_53.h> // Time
 #include "Seven_Segment10pt7b.h"   // DoW
 #include "DSEG7_Classic_Bold_25.h" // Date
 #include "DSEG7_Classic_Regular_39.h" // Temp
+#include <Fonts/FreeMonoBold9pt7b.h> // Menu
 #include "icons.h"
 
 //#include "DSEG7_Classic_Regular_15.h"
@@ -269,6 +271,130 @@ static void display_watchface(bool partial_refresh) {
     display.display(partial_refresh);
 }
 
+enum class Battery_Screen {
+    NONE,
+    READING,
+    WAITING_FOR_CHARGE,
+};
+void draw_check_battery(Battery_Screen screen) {
+    display.fillScreen(GxEPD_BLACK);
+    display.setFont(&FreeMonoBold9pt7b);
+
+    if (screen == Battery_Screen::READING) {
+        display.setCursor(65, 30);
+        display.println("Battery");
+        display.setCursor(0, 80);
+        display.print(" Voltage: ");
+        display.print(get_battery_voltage());
+        display.println(" V");
+        display.print(" Offset:  ");
+        display.print(get_adc_cal());
+        display.println(" V");
+        display.setCursor(20, 150);
+        display.print("Press Menu to");
+        display.setCursor(20, 170);
+        display.print("calibrate");
+    }
+    if (screen == Battery_Screen::WAITING_FOR_CHARGE) {
+        display.setCursor(0, 60);
+        display.println("Wait for full");
+        display.println("charge (red light");
+        display.println("off) then unplug");
+        display.println("then press Menu");
+    }
+
+    display.display(true);
+}
+void handle_check_battery() {
+
+    Button b = Button::NONE;
+    Battery_Screen screen = Battery_Screen::READING;
+    Battery_Screen next_screen = Battery_Screen::NONE;
+    while (1) {
+        if (screen == Battery_Screen::READING) {
+            if (b == Button::MENU) next_screen = Battery_Screen::WAITING_FOR_CHARGE;
+            if (b == Button::BACK) break; // exit battery menu
+            if (b == Button::UP)   set_adc_cal(get_adc_cal() + 0.01f);
+            if (b == Button::DOWN) set_adc_cal(get_adc_cal() - 0.01f);
+        }
+        if (screen == Battery_Screen::WAITING_FOR_CHARGE) {
+            if (b == Button::MENU) {
+                // Do the auto calibration
+                // We assume that the charging circuit accurately charges to 4.20 V
+                set_adc_cal(0.0f); // clear any current calibration
+                float voltage = get_battery_voltage();
+                set_adc_cal(4.20f - voltage);
+                next_screen = Battery_Screen::READING;
+            }
+            if (b == Button::BACK) next_screen = Battery_Screen::READING;
+        }
+
+        if (next_screen != Battery_Screen::NONE) {
+            screen = next_screen;
+            next_screen = Battery_Screen::NONE;
+        }
+
+        draw_check_battery(screen);
+        b = get_next_button();
+    }
+}
+
+void null_menu() {}
+
+typedef void(*menu_ptr)();
+static const char* menuItems[] = {"Check Battery", "Vibrate Motor", "====", "Set Time", "====", "===="};
+menu_ptr menu_handlers[] = {handle_check_battery, null_menu, null_menu, null_menu, null_menu, null_menu };
+#define MENU_HEIGHT 30
+#define MENU_LENGTH 6
+static void draw_menu(int menu_index, bool partial_refresh) {
+    display.fillScreen(GxEPD_BLACK);
+    display.setFont(&FreeMonoBold9pt7b);
+
+    int16_t  x1, y1;
+    uint16_t w, h;
+    int16_t yPos;
+
+    for (int i = 0; i < MENU_LENGTH; i++){
+        yPos = 30+(MENU_HEIGHT*i);
+        display.setCursor(0, yPos);
+        if (i == menu_index) {
+            display.getTextBounds(menuItems[i], 0, yPos, &x1, &y1, &w, &h);
+            display.fillRect(x1-1, y1-10, 200, h+15, GxEPD_WHITE);
+            display.setTextColor(GxEPD_BLACK);
+            display.println(menuItems[i]);
+        } else {
+            display.setTextColor(GxEPD_WHITE);
+            display.println(menuItems[i]);
+        }
+    }
+
+    display.display(partial_refresh);
+}
+
+static void handle_menu() {
+
+    int menu_index = 0;
+    Button b = Button::NONE;
+    while (1) {
+        if (b == Button::MENU) menu_handlers[menu_index]();
+        if (b == Button::BACK) break;
+        if (b == Button::DOWN) {
+            menu_index++;
+            if (menu_index > MENU_LENGTH - 1) {
+                menu_index = 0;
+            }
+        }
+        if (b == Button::UP) {
+            menu_index--;
+            if (menu_index < 0) {
+                menu_index = MENU_LENGTH - 1;
+            }
+        }
+        draw_menu(menu_index, true);
+        b = get_next_button();
+    }
+}
+
 void run_watch() {
     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause(); //get wake up reason
 
@@ -278,10 +404,14 @@ void run_watch() {
             display_watchface(true);
             break;
         case ESP_SLEEP_WAKEUP_EXT1: // Button press
+        {
             // TODO
             watch_init();
+            Button b = get_next_button();
+            if (b == Button::MENU) handle_menu();
             display_watchface(true);
             break;
+        }
         default:
             first_time_watch_init();
             watch_init();
