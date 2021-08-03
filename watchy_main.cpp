@@ -475,7 +475,6 @@ static void handle_set_time() {
     }
 }
 
-
 static const int STEPS_WIDTH = 5;
 static void draw_set_steps(const int steps, const int index) {
     display.fillScreen(GxEPD_BLACK);
@@ -618,11 +617,14 @@ void run_watch() {
             break;
         case ESP_SLEEP_WAKEUP_EXT1: // Button press
         {
-            // TODO
             watch_init();
             Button b = get_next_button();
-            if (b == Button::MENU) handle_menu();
-            display_watchface(true);
+            if (b == Button::MENU) {
+                handle_menu();
+                display_watchface(false);
+            } else {
+                display_watchface(true);
+            }
             break;
         }
         default:
