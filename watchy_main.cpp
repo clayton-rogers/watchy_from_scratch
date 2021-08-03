@@ -162,7 +162,6 @@ static void first_time_watch_init() {
 static void watch_init() {
     display.init(0, false);
     display.setFullWindow();
-    Wire.begin(SDA, SCL); // i2c for RTC and Accel
     RTC.alarm(ALARM_2); // reset alarm flag
     RTC.read(currentTime);
     step_count = sensor.getCounter();
@@ -305,6 +304,7 @@ void draw_check_battery(Battery_Screen screen) {
 
     display.display(true);
 }
+
 void handle_check_battery() {
 
     Button b = Button::NONE;
@@ -397,6 +397,7 @@ static void handle_menu() {
 
 void run_watch() {
     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause(); //get wake up reason
+    Wire.begin(SDA, SCL); //init i2c
 
     switch (wakeup_reason) {
         case ESP_SLEEP_WAKEUP_EXT0: // RTC Alarm
