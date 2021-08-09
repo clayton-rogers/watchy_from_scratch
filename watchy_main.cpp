@@ -5,8 +5,11 @@
 #include <GxEPD2_BW.h> // screen
 #include <DS3232RTC.h> // RTC
 #include <bma.h>       // accelerometer
+
 #include "battery.h"   // battery voltage monitor
 #include "button.h"
+#include "weather.h"
+#include "wifi_wrapper.h"
 
 // Fonts
 #include <DSEG7_Classic_Bold_53.h> // Time
@@ -18,9 +21,6 @@
 
 //#include "DSEG7_Classic_Regular_15.h"
 
-//#include "icons.h"
-
-
 #include "pin_def.h"
 #define YEAR_OFFSET 1970
 
@@ -28,11 +28,26 @@ static GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display(GxEPD2_154_D67(
 static DS3232RTC RTC(false);
 static tmElements_t currentTime;
 static uint32_t step_count;
-static int temperature_c;
 
 RTC_DATA_ATTR BMA423 sensor;
 RTC_DATA_ATTR int steps_offset;
 
+#define INTERNET_UPDATE_INTERVAL 30 //minutes
+RTC_DATA_ATTR int internet_updata_counter = INTERNET_UPDATE_INTERVAL;
+
+static void update_from_internet_if_required() {
+    if (internet_updata_counter >= INTERNET_UPDATE_INTERVAL) {
+        internet_updata_counter = 0;
+
+        if (connect_to_wifi()) {
+            update_weather_data_from_internet();
+            disconnect_from_wifi();
+        }
+
+    } else {
+        internet_updata_counter++;
+    }
+}
 
 static void first_time_rtc_config() {
     RTC.squareWave(SQWAVE_NONE); //disable square wave output
@@ -167,7 +182,6 @@ static void watch_init() {
     RTC.alarm(ALARM_2); // reset alarm flag
     RTC.read(currentTime);
     step_count = sensor.getCounter() + steps_offset;
-    temperature_c = RTC.temperature() / 4;
 }
 
 static void deep_sleep() {
@@ -229,33 +243,34 @@ static void display_watchface(bool partial_refresh) {
 
     // =================================
     // Draw Weather
+    WeatherData data = get_weather_data();
+    const unsigned char* weatherIcon = sunny;
+
     display.setFont(&DSEG7_Classic_Regular_39);
-    display.getTextBounds(String(temperature_c), 100, 150, &x1, &y1, &w, &h);
+    display.getTextBounds(String(data.temperature), 100, 150, &x1, &y1, &w, &h);
     display.setCursor(155 - w, 150);
-    display.println(temperature_c);
+    display.println(data.temperature);
     display.drawBitmap(165, 110, celsius, 26, 20, GxEPD_BLACK);
 
-    //int16_t weatherConditionCode = 800;
-    const unsigned char* weatherIcon = sunny;
-    ////https://openweathermap.org/weather-conditions
-    //if(weatherConditionCode > 801){//Cloudy
-    //weatherIcon = cloudy;
-    //}else if(weatherConditionCode == 801){//Few Clouds
-    //weatherIcon = cloudsun;
-    //}else if(weatherConditionCode == 800){//Clear
-    //weatherIcon = sunny;
-    //}else if(weatherConditionCode >=700){//Atmosphere
-    //weatherIcon = cloudy;
-    //}else if(weatherConditionCode >=600){//Snow
-    //weatherIcon = snow;
-    //}else if(weatherConditionCode >=500){//Rain
-    //weatherIcon = rain;
-    //}else if(weatherConditionCode >=300){//Drizzle
-    //weatherIcon = rain;
-    //}else if(weatherConditionCode >=200){//Thunderstorm
-    //weatherIcon = rain;
-    //}else
-    //return;
+
+    //https://openweathermap.org/weather-conditions
+    if (data.weather_condition_code > 801) {//Cloudy
+        weatherIcon = cloudy;
+    } else if (data.weather_condition_code == 802) {//Few Clouds
+        weatherIcon = cloudsun;
+    } else if (data.weather_condition_code == 800) {//Clear
+        weatherIcon = sunny;
+    } else if (data.weather_condition_code >=700) {//Atmosphere
+        weatherIcon = cloudy;
+    } else if (data.weather_condition_code >=600) {//Snow
+        weatherIcon = snow;
+    } else if (data.weather_condition_code >=500) {//Rain
+        weatherIcon = rain;
+    } else if (data.weather_condition_code >=300) {//Drizzle
+        weatherIcon = rain;
+    } else if (data.weather_condition_code >=200) {//Thunderstorm
+        weatherIcon = rain;
+    }
 
     const uint8_t WEATHER_ICON_WIDTH = 48;
     const uint8_t WEATHER_ICON_HEIGHT = 32;
@@ -606,6 +621,8 @@ static void handle_menu() {
     }
 }
 
+
+
 void run_watch() {
     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause(); //get wake up reason
     Wire.begin(SDA, SCL); //init i2c
@@ -613,6 +630,7 @@ void run_watch() {
     switch (wakeup_reason) {
         case ESP_SLEEP_WAKEUP_EXT0: // RTC Alarm
             watch_init();
+            update_from_internet_if_required();
             display_watchface(true);
             break;
         case ESP_SLEEP_WAKEUP_EXT1: // Button press
@@ -630,6 +648,7 @@ void run_watch() {
         default:
             first_time_watch_init();
             watch_init();
+            update_from_internet_if_required();
             display_watchface(false);
             break;
     }
