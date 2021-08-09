@@ -4,7 +4,7 @@
 
 #include "pin_def.h"
 
-RTC_DATA_ATTR float bat_adc_offset = 0.0f;
+RTC_DATA_ATTR float bat_adc_offset = -0.07f;
 
 float get_battery_voltage() {
     // Battery voltage goes through a 1/2 divider.
