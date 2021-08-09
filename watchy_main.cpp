@@ -10,6 +10,7 @@
 #include "button.h"
 #include "weather.h"
 #include "wifi_wrapper.h"
+#include "generic_menu.h"
 
 // Fonts
 #include <DSEG7_Classic_Bold_53.h> // Time
@@ -24,7 +25,7 @@
 #include "pin_def.h"
 #define YEAR_OFFSET 1970
 
-static GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display(GxEPD2_154_D67(CS, DC, RESET, BUSY));
+GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display(GxEPD2_154_D67(CS, DC, RESET, BUSY));
 static DS3232RTC RTC(false);
 static tmElements_t currentTime;
 static uint32_t step_count;
@@ -565,62 +566,10 @@ static void handle_set_steps() {
 
 static void null_menu() {}
 
-typedef void(*menu_ptr)();
-static const char* menuItems[] =
+static const char* menu_labels[] =
     {"Check Battery", "Vibrate Motor", "Set Steps", "Set Time", "====", "===="};
-menu_ptr menu_handlers[] =
+menu_handler_ptr menu_callbacks[] =
     {handle_check_battery, handle_vibrate, handle_set_steps, handle_set_time, null_menu, null_menu };
-#define MENU_HEIGHT 30
-#define MENU_LENGTH 6
-static void draw_menu(int menu_index, bool partial_refresh) {
-    display.fillScreen(GxEPD_BLACK);
-    display.setFont(&FreeMonoBold9pt7b);
-
-    int16_t  x1, y1;
-    uint16_t w, h;
-    int16_t yPos;
-
-    for (int i = 0; i < MENU_LENGTH; i++){
-        yPos = 30+(MENU_HEIGHT*i);
-        display.setCursor(0, yPos);
-        if (i == menu_index) {
-            display.getTextBounds(menuItems[i], 0, yPos, &x1, &y1, &w, &h);
-            display.fillRect(x1-1, y1-10, 200, h+15, GxEPD_WHITE);
-            display.setTextColor(GxEPD_BLACK);
-            display.println(menuItems[i]);
-        } else {
-            display.setTextColor(GxEPD_WHITE);
-            display.println(menuItems[i]);
-        }
-    }
-
-    display.display(partial_refresh);
-}
-
-static void handle_menu() {
-
-    int menu_index = 0;
-    Button b = Button::NONE;
-    while (1) {
-        if (b == Button::MENU) menu_handlers[menu_index]();
-        if (b == Button::BACK) break;
-        if (b == Button::DOWN) {
-            menu_index++;
-            if (menu_index > MENU_LENGTH - 1) {
-                menu_index = 0;
-            }
-        }
-        if (b == Button::UP) {
-            menu_index--;
-            if (menu_index < 0) {
-                menu_index = MENU_LENGTH - 1;
-            }
-        }
-        draw_menu(menu_index, true);
-        b = get_next_button();
-    }
-}
-
 
 
 void run_watch() {
@@ -638,7 +587,7 @@ void run_watch() {
             watch_init();
             Button b = get_next_button();
             if (b == Button::MENU) {
-                handle_menu();
+                handle_generic_menu(menu_labels, menu_callbacks);
                 display_watchface(false);
             } else {
                 display_watchface(true);
