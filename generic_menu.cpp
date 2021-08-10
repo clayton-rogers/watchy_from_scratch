@@ -54,3 +54,5 @@ void handle_generic_menu(const char** menu_labels, menu_handler_ptr* menu_callba
         b = get_next_button();
     }
 }
+
+void null_menu() {}
