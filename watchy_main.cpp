@@ -12,6 +12,7 @@
 #include "main_menu.h"
 #include "steps.h"
 #include "clock.h"
+#include "calendar.h"
 
 // Fonts
 #include <DSEG7_Classic_Bold_53.h> // Time
@@ -37,6 +38,7 @@ static void update_from_internet_if_required() {
 
         if (connect_to_wifi()) {
             update_weather_data_from_internet();
+            update_calendar_from_internet();
             disconnect_from_wifi();
         }
 
@@ -109,8 +111,8 @@ static void display_watchface(bool partial_refresh) {
     display.print("0");
     }
     display.println(currentTime.Day);
-    display.setCursor(5, 150);
-    display.println(currentTime.Year + YEAR_OFFSET);// offset from 1970, since year is stored in uint8_t
+    //display.setCursor(5, 150);
+    //display.println(currentTime.Year + YEAR_OFFSET);// offset from 1970, since year is stored in uint8_t
 
     // =================================
     // Draw Steps
@@ -121,43 +123,118 @@ static void display_watchface(bool partial_refresh) {
     // =================================
     // Draw Weather
     WeatherData data = get_weather_data();
-    const unsigned char* weatherIcon = sunny;
+    //const unsigned char* weatherIcon = sunny;
 
-    display.setFont(&DSEG7_Classic_Regular_39);
-    display.getTextBounds(String(data.temperature), 100, 150, &x1, &y1, &w, &h);
-    display.setCursor(155 - w, 150);
-    display.println(data.temperature);
-    display.drawBitmap(165, 110, celsius, 26, 20, GxEPD_BLACK);
+    //display.setFont(&DSEG7_Classic_Regular_39);
+    display.setFont(&DSEG7_Classic_Bold_25);
+    display.setCursor(5, 150);
+    //display.getTextBounds(String(data.temperature), 100, 150, &x1, &y1, &w, &h);
+    //display.setCursor(155 - w, 150);
+    display.print(data.temperature + String(" C"));
+    //display.drawBitmap(165, 110, celsius, 26, 20, GxEPD_BLACK);
 
 
-    //https://openweathermap.org/weather-conditions
-    if (data.weather_condition_code > 801) {//Cloudy
-        weatherIcon = cloudy;
-    } else if (data.weather_condition_code == 802) {//Few Clouds
-        weatherIcon = cloudsun;
-    } else if (data.weather_condition_code == 800) {//Clear
-        weatherIcon = sunny;
-    } else if (data.weather_condition_code >=700) {//Atmosphere
-        weatherIcon = cloudy;
-    } else if (data.weather_condition_code >=600) {//Snow
-        weatherIcon = snow;
-    } else if (data.weather_condition_code >=500) {//Rain
-        weatherIcon = rain;
-    } else if (data.weather_condition_code >=300) {//Drizzle
-        weatherIcon = rain;
-    } else if (data.weather_condition_code >=200) {//Thunderstorm
-        weatherIcon = rain;
-    }
-
-    const uint8_t WEATHER_ICON_WIDTH = 48;
-    const uint8_t WEATHER_ICON_HEIGHT = 32;
-    display.drawBitmap(145, 158, weatherIcon, WEATHER_ICON_WIDTH, WEATHER_ICON_HEIGHT, GxEPD_BLACK);
+    ////https://openweathermap.org/weather-conditions
+    //if (data.weather_condition_code > 801) {//Cloudy
+    //    weatherIcon = cloudy;
+    //} else if (data.weather_condition_code == 802) {//Few Clouds
+    //    weatherIcon = cloudsun;
+    //} else if (data.weather_condition_code == 800) {//Clear
+    //    weatherIcon = sunny;
+    //} else if (data.weather_condition_code >=700) {//Atmosphere
+    //    weatherIcon = cloudy;
+    //} else if (data.weather_condition_code >=600) {//Snow
+    //    weatherIcon = snow;
+    //} else if (data.weather_condition_code >=500) {//Rain
+    //    weatherIcon = rain;
+    //} else if (data.weather_condition_code >=300) {//Drizzle
+    //    weatherIcon = rain;
+    //} else if (data.weather_condition_code >=200) {//Thunderstorm
+    //    weatherIcon = rain;
+    //}
+//
+    //const uint8_t WEATHER_ICON_WIDTH = 48;
+    //const uint8_t WEATHER_ICON_HEIGHT = 32;
+    //display.drawBitmap(145, 158, weatherIcon, WEATHER_ICON_WIDTH, WEATHER_ICON_HEIGHT, GxEPD_BLACK);
 
     // =================================
     // Draw Battery
     display.setFont(&Seven_Segment10pt7b);
-    display.setCursor(154, 93);
-    display.printf("%d%%", (int)get_battery_percentage());
+    display.setCursor(140, 93);
+    display.printf("%.1f%%", get_battery_percentage());
+
+    // =================================
+    // Draw Calendar
+    calendar_event_t event = get_next_calendar_event();
+    display.setFont(&Seven_Segment10pt7b);
+    int index = 0;
+    bool done = false;
+    display.setCursor(100, 113);
+    if (!done) {
+        for (int i = 0; i < 11; ++i) {
+            char c = event.name[index];
+            if (c == 0) {
+                done = true;
+                break;
+            }
+            // if we find a space, put the next word
+            // on the next line
+            if (c == ' ') {
+                ++index;
+                break;
+            }
+            display.write(c);
+            ++index;
+            if (index == CALENDAR_EVENT_NAME_LENGTH) {
+                done = true;
+                break;
+            }
+        }
+    }
+    display.setCursor(100, 133);
+    if (!done) {
+        for (int i = 0; i < 11; ++i) {
+            char c = event.name[index];
+            if (c == 0) {
+                done = true;
+                break;
+            }
+            // if we find a space, put the next word
+            // on the next line
+            if (c == ' ') {
+                ++index;
+                break;
+            }
+            display.write(c);
+            ++index;
+            if (index == CALENDAR_EVENT_NAME_LENGTH) {
+                done = true;
+                break;
+            }
+        }
+    }
+    display.setCursor(100, 153);
+    if (!done) {
+        for (int i = 0; i < 11; ++i) {
+            char c = event.name[index];
+            if (c == 0) {
+                done = true;
+                break;
+            }
+            // if we find a space, put the next word
+            // on the next line
+            if (c == ' ') {
+                ++index;
+                break;
+            }
+            display.write(c);
+            ++index;
+            if (index == CALENDAR_EVENT_NAME_LENGTH) {
+                done = true;
+                break;
+            }
+        }
+    }
 
     // =================================
     // Flush to screen
@@ -182,6 +259,7 @@ void run_watch() {
                 handle_main_menu();
                 display_watchface(false);
             } else {
+                update_from_internet_if_required();
                 display_watchface(true);
             }
             break;

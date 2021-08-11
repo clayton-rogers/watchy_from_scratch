@@ -12,3 +12,25 @@ void normalize_datetime(tmElements_t* tm) {
     if (tm->Second == 255) tm->Second = 59;
     if (tm->Second > 59)   tm->Second = 0;
 }
+
+tmElements_t add_datetime(const tmElements_t& a, const tmElements_t& b) {
+    const time_t a_unix = makeTime(a);
+    const time_t b_unix = makeTime(b);
+    const time_t result_unix = a_unix + b_unix;
+
+    tmElements_t result;
+    breakTime(result_unix, result);
+
+    return result;
+}
+
+tmElements_t sub_datetime(const tmElements_t& a, const tmElements_t& b) {
+    const time_t a_unix = makeTime(a);
+    const time_t b_unix = makeTime(b);
+    const time_t result_unix = a_unix - b_unix;
+
+    tmElements_t result;
+    breakTime(result_unix, result);
+
+    return result;
+}
