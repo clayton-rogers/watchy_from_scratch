@@ -34,3 +34,13 @@ tmElements_t sub_datetime(const tmElements_t& a, const tmElements_t& b) {
 
     return result;
 }
+
+int time_delta_minutes(const tmElements_t& from, const tmElements_t& to) {
+
+    const time_t a_unix = makeTime(from);
+    const time_t b_unix = makeTime(to);
+    const time_t result_seconds_unix = b_unix - a_unix;
+    const time_t results_minutes_unix = result_seconds_unix / 60;
+
+    return results_minutes_unix; // convert long to int
+}

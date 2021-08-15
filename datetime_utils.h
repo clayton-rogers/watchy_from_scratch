@@ -9,3 +9,5 @@ void normalize_datetime(tmElements_t* tm);
 
 tmElements_t add_datetime(const tmElements_t& a, const tmElements_t& b);
 tmElements_t sub_datetime(const tmElements_t& a, const tmElements_t& b);
+
+int time_delta_minutes(const tmElements_t& from, const tmElements_t& to);

@@ -37,21 +37,12 @@ static void refresh_access_token() {
     http.addHeader("content-type", "application/x-www-form-urlencoded");
     int http_response_code = http.POST(payload);
     if (http_response_code != 200) {
+        http.end();
         return;
     }
-    //Serial.print("Post for new access token: ");
-    //Serial.println(http_response_code);
+
     JSONVar response = JSON.parse(http.getString());
-    //Serial.println(response);
-    //Serial.println(response.length());
-    //Serial.println(response.keys());
-    //Serial.println(response.hasOwnProperty("access_token"));
-    //Serial.println(JSONVar::typeof_(response));
-    //Serial.println(JSONVar::typeof_(response["access_token"]));
-    //Serial.println(JSONVar::stringify(response));
     access_token = (const char*)response["access_token"];
-    //Serial.println(access_token);
-    //Serial.println();
 
     http.end();
 }
@@ -120,7 +111,7 @@ static tmElements_t string_to_datetime(const String& input) {
 
 static void update_calendar() {
     HTTPClient http;
-    http.setConnectTimeout(5000);//3sec
+    http.setConnectTimeout(5000);//5sec
 
     // Sub 10 mins, so if the event has just started, then we still show it
     tmElements_t current_time = get_date_time();
@@ -138,26 +129,13 @@ static void update_calendar() {
         String("&timeMin=") +  datetime_to_string(query_time) + //String("2021-08-08T23%3A00%3A00-07%3A00") +
         String("&key=") + String(GOOGLE_CALENDAR_API_KEY);
 
-    //Serial.println();
-    //Serial.println();
-    //Serial.println("update_calendar()");
-    //Serial.println(query_url);
-
     http.begin(query_url);
     String auth = String("Bearer ") + access_token;
-    //Serial.print("Auth str: ");
-    //Serial.println(auth);
-    //Serial.println(String("Bearer "));
-    //Serial.println(access_token);
-    //Serial.println(String("Bearer ") + access_token);
     http.addHeader("Authorization", auth);
     int http_response_code = http.GET();
-    //Serial.println();
-    //Serial.println(String("Response code: ") + String(http_response_code));
     if (http_response_code == 200) {
         JSONVar response = JSON.parse(http.getString());
         JSONVar items = response["items"];
-        //Serial.println(items.length());
         for (int i = 0; i < 10; ++i) {
             JSONVar event = items[i];
             String event_name = (const char*)event["summary"];
@@ -169,7 +147,7 @@ static void update_calendar() {
             calendar[i].start_time = datetime;
         }
     } else {
-        Serial.println("bad HTTP response code");
+        //Serial.println("bad HTTP response code");
         // Print error?
     }
     http.end();
@@ -183,14 +161,25 @@ void update_calendar_from_internet() {
 }
 
 calendar_event_t get_next_calendar_event() {
-//    tmElements_t current_time = get_date_time();
-//
-//    // Sub 10 mins, so if the event has just started, then we still show it
-//
-//
-//    for (int i = 0; i < CALENDAR_SIZE; ++i) {
-//        // Find the first event that is in the future
-//    }
-//
-    return calendar[0];
+
+    tmElements_t current_time = get_date_time();
+    tmElements_t ten_mins = {};
+    ten_mins.Month = 1;
+    ten_mins.Day = 1;
+    ten_mins.Minute = 10;
+    tmElements_t query_time = sub_datetime(current_time, ten_mins);
+
+
+    for (int i = 0; i < CALENDAR_SIZE; ++i) {
+        int time_till_event = time_delta_minutes(query_time, calendar[i].start_time);
+        if (time_till_event > 0) {
+            return calendar[i];
+        }
+    }
+
+    // if we don't have a event that's in the future, then return a null one
+    calendar_event_t null_event = {};
+    null_event.start_time.Month = 1; // Just to make the date valid
+    null_event.start_time.Day = 1;
+    return null_event;
 }

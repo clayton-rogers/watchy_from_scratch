@@ -13,6 +13,7 @@
 #include "steps.h"
 #include "clock.h"
 #include "calendar.h"
+#include "datetime_utils.h"
 
 // Fonts
 #include <DSEG7_Classic_Bold_53.h> // Time
@@ -68,6 +69,57 @@ static void deep_sleep() {
     esp_deep_sleep_start();
 }
 
+static void display_calendar() {
+    display.setFont(&Seven_Segment10pt7b);
+
+    const int base_cursor_x = 100;
+    const int base_cursor_y = 133;
+    const int newline = Seven_Segment10pt7b.yAdvance;
+    const int MAX_MINUTES_BEFORE_EVENT_DISPLAY = 60;
+
+    calendar_event_t event = get_next_calendar_event();
+
+    // Check that the event is in the next hour, otherwise don't care
+    tmElements_t current_time = get_date_time();
+    int mins_till_next_event = time_delta_minutes(current_time, event.start_time);
+    if (mins_till_next_event > MAX_MINUTES_BEFORE_EVENT_DISPLAY) {
+        display.setCursor(base_cursor_x, base_cursor_y - newline);
+        display.print("=========");
+        display.setCursor(base_cursor_x, base_cursor_y);
+        display.print("Free Time");
+        return;
+    }
+
+    // Display the time and the countdown
+    display.setCursor(base_cursor_x, base_cursor_y - newline);
+    display.printf("%2d:%2d | %d", event.start_time.Hour, event.start_time.Minute, mins_till_next_event);
+
+    // Display the calendar event name
+    bool done = false;
+    int index = 0;
+    for (int line = 0; line < 4 && !done; ++line) {
+        display.setCursor(base_cursor_x, base_cursor_y + line*newline);
+        for (int i = 0; i < 11 && !done; ++i) {
+            char c = event.name[index];
+            if (c == 0) {
+                done = true;
+                break;
+            }
+            // if we find a space, put the next word
+            // on the next line
+            if (c == ' ') {
+                ++index;
+                break;
+            }
+            display.write(c);
+            ++index;
+            if (index == CALENDAR_EVENT_NAME_LENGTH) {
+                done = true;
+            }
+        }
+    }
+}
+
 static void display_watchface(bool partial_refresh) {
     display.fillScreen(GxEPD_WHITE);
     display.setTextColor(GxEPD_BLACK);
@@ -111,8 +163,6 @@ static void display_watchface(bool partial_refresh) {
     display.print("0");
     }
     display.println(currentTime.Day);
-    //display.setCursor(5, 150);
-    //display.println(currentTime.Year + YEAR_OFFSET);// offset from 1970, since year is stored in uint8_t
 
     // =================================
     // Draw Steps
@@ -124,15 +174,10 @@ static void display_watchface(bool partial_refresh) {
     // Draw Weather
     WeatherData data = get_weather_data();
     //const unsigned char* weatherIcon = sunny;
-
-    //display.setFont(&DSEG7_Classic_Regular_39);
     display.setFont(&DSEG7_Classic_Bold_25);
     display.setCursor(5, 150);
-    //display.getTextBounds(String(data.temperature), 100, 150, &x1, &y1, &w, &h);
-    //display.setCursor(155 - w, 150);
     display.print(data.temperature + String(" C"));
     //display.drawBitmap(165, 110, celsius, 26, 20, GxEPD_BLACK);
-
 
     ////https://openweathermap.org/weather-conditions
     //if (data.weather_condition_code > 801) {//Cloudy
@@ -152,7 +197,7 @@ static void display_watchface(bool partial_refresh) {
     //} else if (data.weather_condition_code >=200) {//Thunderstorm
     //    weatherIcon = rain;
     //}
-//
+
     //const uint8_t WEATHER_ICON_WIDTH = 48;
     //const uint8_t WEATHER_ICON_HEIGHT = 32;
     //display.drawBitmap(145, 158, weatherIcon, WEATHER_ICON_WIDTH, WEATHER_ICON_HEIGHT, GxEPD_BLACK);
@@ -165,80 +210,60 @@ static void display_watchface(bool partial_refresh) {
 
     // =================================
     // Draw Calendar
-    calendar_event_t event = get_next_calendar_event();
-    display.setFont(&Seven_Segment10pt7b);
-    int index = 0;
-    bool done = false;
-    display.setCursor(100, 113);
-    if (!done) {
-        for (int i = 0; i < 11; ++i) {
-            char c = event.name[index];
-            if (c == 0) {
-                done = true;
-                break;
-            }
-            // if we find a space, put the next word
-            // on the next line
-            if (c == ' ') {
-                ++index;
-                break;
-            }
-            display.write(c);
-            ++index;
-            if (index == CALENDAR_EVENT_NAME_LENGTH) {
-                done = true;
-                break;
-            }
-        }
-    }
-    display.setCursor(100, 133);
-    if (!done) {
-        for (int i = 0; i < 11; ++i) {
-            char c = event.name[index];
-            if (c == 0) {
-                done = true;
-                break;
-            }
-            // if we find a space, put the next word
-            // on the next line
-            if (c == ' ') {
-                ++index;
-                break;
-            }
-            display.write(c);
-            ++index;
-            if (index == CALENDAR_EVENT_NAME_LENGTH) {
-                done = true;
-                break;
-            }
-        }
-    }
-    display.setCursor(100, 153);
-    if (!done) {
-        for (int i = 0; i < 11; ++i) {
-            char c = event.name[index];
-            if (c == 0) {
-                done = true;
-                break;
-            }
-            // if we find a space, put the next word
-            // on the next line
-            if (c == ' ') {
-                ++index;
-                break;
-            }
-            display.write(c);
-            ++index;
-            if (index == CALENDAR_EVENT_NAME_LENGTH) {
-                done = true;
-                break;
-            }
-        }
-    }
+    display_calendar();
 
     // =================================
     // Flush to screen
     display.display(partial_refresh);
+}
+
+static void run_unit_tests() {
+    Serial.begin(115200);
+
+    Serial.println("Unit tests:");
+
+    {
+        tmElements_t first;
+        first.Year = 51;
+        first.Month = 8;
+        first.Day = 31;
+        first.Hour = 23;
+        first.Minute = 59;
+        first.Second = 0;
+        tmElements_t second;
+        second.Year = 51;
+        second.Month = 9;
+        second.Day = 1;
+        second.Hour = 0;
+        second.Minute = 1;
+        second.Second = 0;
+
+        int delta = time_delta_minutes(first, second);
+        Serial.println(String("2 == ") + String(delta));
+        delta = time_delta_minutes(second, first);
+        Serial.println(String("-2 == ") + String(delta));
+
+
+        first.Year = 51;
+        first.Month = 8;
+        first.Day = 31;
+        first.Hour = 21;
+        first.Minute = 23;
+        first.Second = 0;
+
+        second.Year = 51;
+        second.Month = 8;
+        second.Day = 31;
+        second.Hour = 22;
+        second.Minute = 23;
+        second.Second = 0;
+
+        delta = time_delta_minutes(first, second);
+        Serial.println(String("60 == ") + String(delta));
+    }
+
+    Serial.println("End unit tests");
+    Serial.flush();
 }
 
 void run_watch() {
@@ -259,12 +284,12 @@ void run_watch() {
                 handle_main_menu();
                 display_watchface(false);
             } else {
-                update_from_internet_if_required();
                 display_watchface(true);
             }
             break;
         }
         default:
+            run_unit_tests();
             first_time_watch_init();
             watch_init();
             update_from_internet_if_required();
