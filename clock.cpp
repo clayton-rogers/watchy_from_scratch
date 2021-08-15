@@ -6,6 +6,7 @@
 // Globals
 static DS3232RTC RTC(false);
 static tmElements_t currentTime;
+RTC_DATA_ATTR static bool alarm_enabled;
 
 
 // ******************************************************** //
@@ -23,9 +24,19 @@ void first_time_rtc_config() {
     RTC.setAlarm(ALM2_EVERY_MINUTE, 0, 0, 0, 0); //alarm wakes up Watchy every minute
     RTC.alarmInterrupt(ALARM_2, true); //enable alarm interrupt
     RTC.read(currentTime);
+    alarm_enabled = true;
 }
 
 void clock_init() {
     RTC.alarm(ALARM_2); // reset alarm flag
     RTC.read(currentTime);
+    if (!alarm_enabled) {
+        RTC.alarmInterrupt(ALARM_2, true); //enable alarm interrupt
+        alarm_enabled = true;
+    }
+}
+
+void disable_minute_alarm() {
+    RTC.alarmInterrupt(ALARM_2, false); //enable alarm interrupt
+    alarm_enabled = false;
 }

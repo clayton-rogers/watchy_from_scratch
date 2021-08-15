@@ -276,6 +276,12 @@ static void run_unit_tests() {
     Serial.flush();
 }
 
+static void display_sleep_face() {
+    display.fillScreen(GxEPD_WHITE);
+    display.drawBitmap(0, 0, sleeeep, 200, 200, GxEPD_BLACK);
+    display.display(false); // full refresh
+}
+
 void run_watch() {
     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause(); //get wake up reason
     Wire.begin(SDA, SCL); //init i2c
@@ -309,6 +315,16 @@ void run_watch() {
             update_from_internet_if_required();
             display_watchface(false);
             break;
+    }
+
+    // 01:00
+    const int sleep_hour = 1;
+    const int sleep_minute = 0;
+    const tmElements_t current_time = get_date_time();
+    if (current_time.Hour == sleep_hour &&
+            current_time.Minute == sleep_minute) {
+        display_sleep_face();
+        disable_minute_alarm();
     }
 
     deep_sleep();
