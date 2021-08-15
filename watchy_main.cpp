@@ -33,8 +33,8 @@ GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display(GxEPD2_154_D67(CS, DC,
 #define INTERNET_UPDATE_INTERVAL 30 //minutes
 RTC_DATA_ATTR int internet_updata_counter = INTERNET_UPDATE_INTERVAL;
 
-static void update_from_internet_if_required() {
-    if (internet_updata_counter >= INTERNET_UPDATE_INTERVAL) {
+static void update_from_internet_if_required(bool force = false) {
+    if (internet_updata_counter >= INTERNET_UPDATE_INTERVAL || force) {
         internet_updata_counter = 0;
 
         if (connect_to_wifi()) {
@@ -73,9 +73,9 @@ static void display_calendar() {
     display.setFont(&Seven_Segment10pt7b);
 
     const int base_cursor_x = 100;
-    const int base_cursor_y = 133;
+    const int base_cursor_y = 135;
     const int newline = Seven_Segment10pt7b.yAdvance;
-    const int MAX_MINUTES_BEFORE_EVENT_DISPLAY = 60;
+    const int MAX_MINUTES_BEFORE_EVENT_DISPLAY = 99;
 
     calendar_event_t event = get_next_calendar_event();
 
@@ -92,7 +92,7 @@ static void display_calendar() {
 
     // Display the time and the countdown
     display.setCursor(base_cursor_x, base_cursor_y - newline);
-    display.printf("%2d:%2d | %d", event.start_time.Hour, event.start_time.Minute, mins_till_next_event);
+    display.printf(" %02d:%02d    %d", event.start_time.Hour, event.start_time.Minute, mins_till_next_event);
 
     // Display the calendar event name
     bool done = false;
@@ -282,6 +282,10 @@ void run_watch() {
             Button b = get_next_button();
             if (b == Button::MENU) {
                 handle_main_menu();
+                display_watchface(false);
+            } else if (b == Button::UP) {
+                // Force update from the internet
+                update_from_internet_if_required(true);
                 display_watchface(false);
             } else {
                 display_watchface(true);
