@@ -92,7 +92,11 @@ static void display_calendar() {
 
     // Display the time and the countdown
     display.setCursor(base_cursor_x, base_cursor_y - newline);
-    display.printf(" %02d:%02d    %d", event.start_time.Hour, event.start_time.Minute, mins_till_next_event);
+    display.printf(" %02d:%02d", event.start_time.Hour, event.start_time.Minute);
+    display.setFont(&DSEG7_Classic_Bold_25);
+    display.setCursor(base_cursor_x + 55, base_cursor_y - newline);
+    display.print(mins_till_next_event);
+    display.setFont(&Seven_Segment10pt7b);
 
     // Display the calendar event name
     bool done = false;
@@ -166,8 +170,8 @@ static void display_watchface(bool partial_refresh) {
 
     // =================================
     // Draw Steps
-    display.drawBitmap(10, 165, steps, 19, 23, GxEPD_BLACK);
-    display.setCursor(35, 190);
+    display.drawBitmap(0, 165, steps, 19, 23, GxEPD_BLACK);
+    display.setCursor(25, 190);
     display.println(get_todays_steps());
 
     // =================================
@@ -205,7 +209,7 @@ static void display_watchface(bool partial_refresh) {
     // =================================
     // Draw Battery
     display.setFont(&Seven_Segment10pt7b);
-    display.setCursor(140, 93);
+    display.setCursor(140, 85);
     display.printf("%.1f%%", get_battery_percentage());
 
     // =================================

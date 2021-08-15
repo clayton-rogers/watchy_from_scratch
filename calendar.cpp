@@ -8,7 +8,7 @@
 #include "clock.h"
 #include "datetime_utils.h"
 
-// Approx 27 * 10 = 270 bytes
+// Approx 47 * 10 = 470 bytes
 static const int CALENDAR_SIZE = 10;
 RTC_DATA_ATTR calendar_event_t calendar[CALENDAR_SIZE];
 

@@ -4,7 +4,7 @@
 #include <TimeLib.h>
 
 
-const int CALENDAR_EVENT_NAME_LENGTH = 20;
+const int CALENDAR_EVENT_NAME_LENGTH = 40;
 struct calendar_event_t {
     char name[CALENDAR_EVENT_NAME_LENGTH];
     tmElements_t start_time;
