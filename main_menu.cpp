@@ -10,6 +10,7 @@
 #include "clock.h"
 #include "pin_def.h"
 #include "battery.h"
+#include "vibrate.h"
 
 #include <Fonts/FreeMonoBold9pt7b.h> // Menu
 #include <DSEG7_Classic_Bold_53.h> // Time
@@ -101,15 +102,7 @@ static void handle_vibrate() {
     display.println("Buzz!");
     display.display(true);
 
-    pinMode(VIB_MOTOR_PIN, OUTPUT);
-    bool motorOn = false;
-    int length = 20;
-    uint32_t interval_ms = 100;
-    for(int i = 0; i < length; ++i){
-        motorOn = !motorOn;
-        digitalWrite(VIB_MOTOR_PIN, motorOn);
-        delay(interval_ms);
-    }
+    vibrate();
 }
 
 // ******************************************************** //

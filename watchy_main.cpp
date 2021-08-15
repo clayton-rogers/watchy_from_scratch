@@ -14,6 +14,7 @@
 #include "clock.h"
 #include "calendar.h"
 #include "datetime_utils.h"
+#include "vibrate.h"
 
 // Fonts
 #include <DSEG7_Classic_Bold_53.h> // Time
@@ -76,6 +77,7 @@ static void display_calendar() {
     const int base_cursor_y = 135;
     const int newline = Seven_Segment10pt7b.yAdvance;
     const int MAX_MINUTES_BEFORE_EVENT_DISPLAY = 99;
+    const int MINUTES_BEFORE_TO_VIBRATE = 10;
 
     calendar_event_t event = get_next_calendar_event();
 
@@ -88,6 +90,10 @@ static void display_calendar() {
         display.setCursor(base_cursor_x, base_cursor_y);
         display.print("Free Time");
         return;
+    }
+
+    if (mins_till_next_event == MINUTES_BEFORE_TO_VIBRATE) {
+        vibrate();
     }
 
     // Display the time and the countdown
