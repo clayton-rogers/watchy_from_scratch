@@ -59,7 +59,14 @@ static void watch_init() {
     display.setFullWindow();
     clock_init();
     tmElements_t currentTime = get_date_time();
-    const bool is_midnight = (currentTime.Hour == 0) && (currentTime.Minute == 0);
+
+    // at 12:20, vibrate and reset step count
+    const bool is_midnight = (currentTime.Hour == 0) && (currentTime.Minute == 20);
+    if (is_midnight) {
+        vibrate();
+        // Wait for user to see screen
+        delay(5000);
+    }
     update_steps(is_midnight);
 }
 
