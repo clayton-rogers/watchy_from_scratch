@@ -37,6 +37,8 @@ static void refresh_access_token() {
     http.addHeader("content-type", "application/x-www-form-urlencoded");
     int http_response_code = http.POST(payload);
     if (http_response_code != 200) {
+        Serial.println("Bad HTTP response code to refresh access token");
+        Serial.println(http.getString());
         http.end();
         return;
     }
@@ -147,15 +149,13 @@ static void update_calendar() {
             calendar[i].start_time = datetime;
         }
     } else {
-        //Serial.println("bad HTTP response code");
-        // Print error?
+        Serial.println("Bad HTTP response code to calendar query");
+        Serial.println(http.getString());
     }
     http.end();
 }
 
 void update_calendar_from_internet() {
-    Serial.begin(115200);
-
     refresh_access_token();
     update_calendar();
 }

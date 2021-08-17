@@ -42,6 +42,8 @@ static void update_from_internet_if_required(bool force = false) {
             update_weather_data_from_internet();
             update_calendar_from_internet();
             disconnect_from_wifi();
+        } else {
+            Serial.println("Failed to connect to wifi");
         }
 
     } else {
