@@ -138,7 +138,7 @@ static void update_calendar() {
     if (http_response_code == 200) {
         JSONVar response = JSON.parse(http.getString());
         JSONVar items = response["items"];
-        for (int i = 0; i < 10; ++i) {
+        for (int i = 0; i < CALENDAR_SIZE; ++i) {
             JSONVar event = items[i];
             String event_name = (const char*)event["summary"];
             String event_start = (const char*)event["start"]["dateTime"];
