@@ -93,7 +93,7 @@ static void display_calendar() {
     // Check that the event is in the next hour, otherwise don't care
     tmElements_t current_time = get_date_time();
     int mins_till_next_event = time_delta_minutes(current_time, event.start_time);
-    if (mins_till_next_event > MAX_MINUTES_BEFORE_EVENT_DISPLAY || mins_till_next_event < 0) {
+    if (mins_till_next_event > MAX_MINUTES_BEFORE_EVENT_DISPLAY || mins_till_next_event < 100) {
         display.setCursor(base_cursor_x, base_cursor_y - newline);
         display.print("=========");
         display.setCursor(base_cursor_x, base_cursor_y);
