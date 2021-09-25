@@ -15,6 +15,7 @@
 #include "calendar.h"
 #include "datetime_utils.h"
 #include "vibrate.h"
+#include "settings.h"
 
 // Fonts
 #include <DSEG7_Classic_Bold_53.h> // Time
@@ -35,6 +36,9 @@ GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display(GxEPD2_154_D67(CS, DC,
 RTC_DATA_ATTR int internet_updata_counter = INTERNET_UPDATE_INTERVAL;
 
 static void update_from_internet_if_required(bool force = false) {
+
+    if (!get_settings().internet_update) { return; }
+
     if (internet_updata_counter >= INTERNET_UPDATE_INTERVAL || force) {
         internet_updata_counter = 0;
 
@@ -62,14 +66,14 @@ static void watch_init() {
     clock_init();
     tmElements_t currentTime = get_date_time();
 
-    // at 12:20, vibrate and reset step count
-    const bool is_midnight = (currentTime.Hour == 0) && (currentTime.Minute == 20);
-    if (is_midnight) {
+    // Reset time, vibrate and reset step count
+    const bool should_reset_steps = (currentTime.Hour == get_settings().reset_hour) && (currentTime.Minute == get_settings().reset_minute);
+    if (should_reset_steps) {
         vibrate();
         // Wait for user to see screen
         delay(5000);
     }
-    update_steps(is_midnight);
+    update_steps(should_reset_steps);
 }
 
 static void deep_sleep() {
