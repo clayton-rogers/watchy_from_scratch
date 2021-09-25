@@ -31,6 +31,7 @@
 #define YEAR_OFFSET 1970
 
 GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display(GxEPD2_154_D67(CS, DC, RESET, BUSY));
+static bool should_sleep = false;
 
 #define INTERNET_UPDATE_INTERVAL 30 //minutes
 RTC_DATA_ATTR int internet_updata_counter = INTERNET_UPDATE_INTERVAL;
@@ -334,11 +335,16 @@ void run_watch() {
     const int sleep_hour = 1;
     const int sleep_minute = 0;
     const tmElements_t current_time = get_date_time();
-    if (current_time.Hour == sleep_hour &&
-            current_time.Minute == sleep_minute) {
+    if ( (current_time.Hour == sleep_hour &&
+            current_time.Minute == sleep_minute) ||
+            should_sleep) {
         display_sleep_face();
         disable_minute_alarm();
     }
 
     deep_sleep();
+}
+
+void set_should_sleep() {
+    should_sleep = true;
 }

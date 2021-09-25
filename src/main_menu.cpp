@@ -12,6 +12,7 @@
 #include "battery.h"
 #include "vibrate.h"
 #include "settings.h"
+#include "watchy_main.h"
 
 #include <Fonts/FreeMonoBold9pt7b.h> // Menu
 #include <DSEG7_Classic_Bold_53.h> // Time
@@ -290,12 +291,24 @@ static void handle_set_steps() {
     }
 }
 
+static void handle_sleep() {
+    set_should_sleep();
+
+    display.fillScreen(GxEPD_BLACK);
+    display.setTextColor(GxEPD_WHITE);
+    display.setCursor(0,30);
+    display.print("Will Sleep!");
+    display.display(true);
+
+    delay(1000);
+}
+
 // ******************************************************** //
 // Menu
 static const char* menu_labels[] =
-    {"Check Battery", "Vibrate Motor", "Set Steps", "Set Time", "====", "Settings"};
+    {"Check Battery", "Vibrate Motor", "Set Steps", "Set Time", "Sleep", "Settings"};
 static menu_handler_ptr menu_callbacks[] =
-    {handle_check_battery, handle_vibrate, handle_set_steps, handle_set_time, null_menu, handle_settings_menu };
+    {handle_check_battery, handle_vibrate, handle_set_steps, handle_set_time, handle_sleep, handle_settings_menu };
 
 void handle_main_menu() {
     handle_generic_menu(menu_labels, menu_callbacks);
