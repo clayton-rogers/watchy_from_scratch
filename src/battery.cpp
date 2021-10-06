@@ -13,6 +13,7 @@ float get_battery_voltage() {
 
 float get_battery_percentage() {
     float voltage = get_battery_voltage();
+    if (voltage < 3.5) { return 0; }
     float percentage = 2808.3808f * powf(voltage, 4)
                         - 43560.9157f * powf(voltage, 3)
                         + 252848.5888f * powf(voltage, 2)
