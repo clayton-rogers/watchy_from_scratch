@@ -52,7 +52,7 @@ static void handle_reset_time() {
 }
 
 static const char* menu_labels[] =
-    {"Internet Update", "Steps Reset", "====", "====", "====", "===="};
+    {"Internet Update", "Steps Reset Time", "====", "====", "====", "===="};
 static menu_handler_ptr menu_callbacks[] =
     {handle_internet_update, handle_reset_time, null_menu, null_menu, null_menu, null_menu };
 
