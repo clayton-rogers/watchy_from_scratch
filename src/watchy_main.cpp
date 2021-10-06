@@ -171,12 +171,12 @@ static void display_watchface(bool partial_refresh) {
 
     String dayOfWeek = dayStr(currentTime.Wday);
     display.getTextBounds(dayOfWeek, 5, 85, &x1, &y1, &w, &h);
-    display.setCursor(85 - w, 85);
+    display.setCursor(90 - w, 85);
     display.println(dayOfWeek);
 
     String month = monthShortStr(currentTime.Month);
     display.getTextBounds(month, 60, 110, &x1, &y1, &w, &h);
-    display.setCursor(85 - w, 110);
+    display.setCursor(90 - w, 110);
     display.println(month);
 
     display.setFont(&DSEG7_Classic_Bold_25);
