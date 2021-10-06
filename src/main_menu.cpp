@@ -306,9 +306,9 @@ static void handle_sleep() {
 // ******************************************************** //
 // Menu
 static const char* menu_labels[] =
-    {"Check Battery", "Vibrate Motor", "Set Steps", "Set Time", "Sleep", "Settings"};
+    {"Check Battery", "Settings", "Set Time", "Set Steps", "Vibrate Motor", "Sleep",};
 static menu_handler_ptr menu_callbacks[] =
-    {handle_check_battery, handle_vibrate, handle_set_steps, handle_set_time, handle_sleep, handle_settings_menu };
+    {handle_check_battery, handle_settings_menu, handle_set_time, handle_set_steps, handle_vibrate, handle_sleep, };
 
 void handle_main_menu() {
     handle_generic_menu(menu_labels, menu_callbacks);
