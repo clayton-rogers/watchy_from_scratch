@@ -38,9 +38,7 @@ RTC_DATA_ATTR int internet_updata_counter = INTERNET_UPDATE_INTERVAL;
 
 static void update_from_internet_if_required(bool force = false) {
 
-    if (!get_settings().internet_update) { return; }
-
-    if (internet_updata_counter >= INTERNET_UPDATE_INTERVAL || force) {
+    if ((internet_updata_counter >= INTERNET_UPDATE_INTERVAL && get_settings().internet_update) || force) {
         internet_updata_counter = 0;
 
         if (connect_to_wifi()) {
