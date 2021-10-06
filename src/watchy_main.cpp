@@ -35,6 +35,7 @@ static bool should_sleep = false;
 
 #define INTERNET_UPDATE_INTERVAL 30 //minutes
 RTC_DATA_ATTR int internet_updata_counter = INTERNET_UPDATE_INTERVAL;
+RTC_DATA_ATTR bool was_asleep = false;
 
 static void update_from_internet_if_required(bool force = false) {
 
@@ -316,7 +317,14 @@ void run_watch() {
                 update_from_internet_if_required(true);
                 display_watchface(false);
             } else {
-                display_watchface(true);
+                // If we just resumed from overnight sleep,
+                // then force a full refresh
+                if (was_asleep) {
+                    was_asleep = false;
+                    display_watchface(false);
+                } else {
+                    display_watchface(true);
+                }
             }
             break;
         }
@@ -338,6 +346,7 @@ void run_watch() {
             should_sleep) {
         display_sleep_face();
         disable_minute_alarm();
+        was_asleep = true;
     }
 
     deep_sleep();
