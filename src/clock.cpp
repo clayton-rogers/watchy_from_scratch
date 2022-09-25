@@ -20,23 +20,23 @@ void set_date_time(const tmElements_t& new_time) {
 }
 
 void first_time_rtc_config() {
-    RTC.squareWave(SQWAVE_NONE); //disable square wave output
-    RTC.setAlarm(ALM2_EVERY_MINUTE, 0, 0, 0, 0); //alarm wakes up Watchy every minute
-    RTC.alarmInterrupt(ALARM_2, true); //enable alarm interrupt
+    RTC.squareWave(DS3232RTC::SQWAVE_NONE);        // disable square wave output
+    RTC.setAlarm(DS3232RTC::ALM2_EVERY_MINUTE, 0, 0, 0, 0); // alarm wakes up Watchy every minute
+    RTC.alarmInterrupt(DS3232RTC::ALARM_2, true);           // enable alarm interrupt
     RTC.read(currentTime);
     alarm_enabled = true;
 }
 
 void clock_init() {
-    RTC.alarm(ALARM_2); // reset alarm flag
+    RTC.alarm(DS3232RTC::ALARM_2); // reset alarm flag
     RTC.read(currentTime);
     if (!alarm_enabled) {
-        RTC.alarmInterrupt(ALARM_2, true); //enable alarm interrupt
+        RTC.alarmInterrupt(DS3232RTC::ALARM_2, true); // enable alarm interrupt
         alarm_enabled = true;
     }
 }
 
 void disable_minute_alarm() {
-    RTC.alarmInterrupt(ALARM_2, false); //enable alarm interrupt
+    RTC.alarmInterrupt(DS3232RTC::ALARM_2, false); // enable alarm interrupt
     alarm_enabled = false;
 }

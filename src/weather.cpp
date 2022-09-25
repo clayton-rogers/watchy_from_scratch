@@ -18,7 +18,7 @@ bool update_weather_data_from_internet(){
     HTTPClient http;
     bool success = false;
     http.setConnectTimeout(3000);//3 second max timeout
-    String weatherQueryURL = String(OPENWEATHERMAP_URL) + String(CITY_NAME) + String(",") + String(COUNTRY_CODE) + String("&units=") + String(TEMP_UNIT) + String("&appid=") + String(OPENWEATHERMAP_APIKEY);
+    String weatherQueryURL = String(OPENWEATHERMAP_URL) + String(CITY_ID) + String("&units=") + String(TEMP_UNIT) + String("&appid=") + String(OPENWEATHERMAP_APIKEY);
     http.begin(weatherQueryURL.c_str());
     int httpResponseCode = http.GET();
     if (httpResponseCode == 200) {
