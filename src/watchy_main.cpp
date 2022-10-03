@@ -1,27 +1,27 @@
 #include "watchy_main.h"
 
 #include <Arduino.h>
+#include <GxEPD2_BW.h>  // screen
 #include <Wire.h>
-#include <GxEPD2_BW.h> // screen
 
-
-#include "battery.h"   // battery voltage monitor
+#include "battery.h"  // battery voltage monitor
 #include "button.h"
+#include "calendar.h"
+#include "clock.h"
+#include "datetime_utils.h"
+#include "main_menu.h"
+#include "settings.h"
+#include "steps.h"
+#include "vibrate.h"
 #include "weather.h"
 #include "wifi_wrapper.h"
-#include "main_menu.h"
-#include "steps.h"
-#include "clock.h"
-#include "calendar.h"
-#include "datetime_utils.h"
-#include "vibrate.h"
-#include "settings.h"
 
 // Fonts
-#include <DSEG7_Classic_Bold_53.h> // Time
-#include "Seven_Segment10pt7b.h"   // DoW
-#include "DSEG7_Classic_Bold_25.h" // Date
-#include "DSEG7_Classic_Regular_39.h" // Temp
+#include <DSEG7_Classic_Bold_53.h>  // Time
+
+#include "DSEG7_Classic_Bold_25.h"     // Date
+#include "DSEG7_Classic_Regular_39.h"  // Temp
+#include "Seven_Segment10pt7b.h"       // DoW
 #include "icons.h"
 
 //#include "DSEG7_Classic_Regular_15.h"
@@ -30,16 +30,19 @@
 
 #define YEAR_OFFSET 1970
 
-GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display(GxEPD2_154_D67(CS, DC, RESET, BUSY));
+GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display(GxEPD2_154_D67(CS, DC,
+                                                                         RESET,
+                                                                         BUSY));
 static bool should_sleep = false;
 
-#define INTERNET_UPDATE_INTERVAL 30 //minutes
+#define INTERNET_UPDATE_INTERVAL 30  // minutes
 RTC_DATA_ATTR int internet_updata_counter = INTERNET_UPDATE_INTERVAL;
 RTC_DATA_ATTR bool was_asleep = false;
 
 static void update_from_internet_if_required(bool force = false) {
-
-    if ((internet_updata_counter >= INTERNET_UPDATE_INTERVAL && get_settings().internet_update) || force) {
+    if ((internet_updata_counter >= INTERNET_UPDATE_INTERVAL &&
+         get_settings().internet_update) ||
+        force) {
         internet_updata_counter = 0;
 
         if (connect_to_wifi()) {
@@ -67,7 +70,9 @@ static void watch_init() {
     tmElements_t currentTime = get_date_time();
 
     // Reset time, vibrate and reset step count
-    const bool should_reset_steps = (currentTime.Hour == get_settings().reset_hour) && (currentTime.Minute == get_settings().reset_minute);
+    const bool should_reset_steps =
+        (currentTime.Hour == get_settings().reset_hour) &&
+        (currentTime.Minute == get_settings().reset_minute);
     if (should_reset_steps) {
         vibrate();
         // Wait for user to see screen
@@ -78,8 +83,11 @@ static void watch_init() {
 
 static void deep_sleep() {
     display.hibernate();
-    esp_sleep_enable_ext0_wakeup(RTC_PIN, 0); //enable deep sleep wake on RTC interrupt
-    esp_sleep_enable_ext1_wakeup(BTN_PIN_MASK, ESP_EXT1_WAKEUP_ANY_HIGH); //enable deep sleep wake on button press
+    esp_sleep_enable_ext0_wakeup(RTC_PIN,
+                                 0);  // enable deep sleep wake on RTC interrupt
+    esp_sleep_enable_ext1_wakeup(
+        BTN_PIN_MASK,
+        ESP_EXT1_WAKEUP_ANY_HIGH);  // enable deep sleep wake on button press
     esp_deep_sleep_start();
 }
 
@@ -96,8 +104,10 @@ static void display_calendar() {
 
     // Check that the event is in the next hour, otherwise don't care
     tmElements_t current_time = get_date_time();
-    int mins_till_next_event = time_delta_minutes(current_time, event.start_time);
-    if (mins_till_next_event > MAX_MINUTES_BEFORE_EVENT_DISPLAY || mins_till_next_event < -9999) {
+    int mins_till_next_event =
+        time_delta_minutes(current_time, event.start_time);
+    if (mins_till_next_event > MAX_MINUTES_BEFORE_EVENT_DISPLAY ||
+        mins_till_next_event < -9999) {
         display.setCursor(base_cursor_x, base_cursor_y - newline);
         display.print("=========");
         display.setCursor(base_cursor_x, base_cursor_y);
@@ -111,7 +121,8 @@ static void display_calendar() {
 
     // Display the time and the countdown
     display.setCursor(base_cursor_x, base_cursor_y - newline);
-    display.printf(" %02d:%02d", event.start_time.Hour, event.start_time.Minute);
+    display.printf(" %02d:%02d", event.start_time.Hour,
+                   event.start_time.Minute);
     display.setFont(&DSEG7_Classic_Bold_25);
     display.setCursor(base_cursor_x + 55, base_cursor_y - newline);
     display.print(mins_till_next_event);
@@ -121,7 +132,7 @@ static void display_calendar() {
     bool done = false;
     int index = 0;
     for (int line = 0; line < 4 && !done; ++line) {
-        display.setCursor(base_cursor_x, base_cursor_y + line*newline);
+        display.setCursor(base_cursor_x, base_cursor_y + line * newline);
         for (int i = 0; i < 11 && !done; ++i) {
             char c = event.name[index];
             if (c == 0) {
@@ -152,13 +163,13 @@ static void display_watchface(bool partial_refresh) {
     // =================================
     // Draw Time
     display.setFont(&DSEG7_Classic_Bold_53);
-    display.setCursor(5, 53+5);
-    if(currentTime.Hour < 10){
+    display.setCursor(5, 53 + 5);
+    if (currentTime.Hour < 10) {
         display.print("0");
     }
     display.print(currentTime.Hour);
     display.print(":");
-    if(currentTime.Minute < 10){
+    if (currentTime.Minute < 10) {
         display.print("0");
     }
     display.println(currentTime.Minute);
@@ -167,7 +178,7 @@ static void display_watchface(bool partial_refresh) {
     // Draw Date
     display.setFont(&Seven_Segment10pt7b);
 
-    int16_t  x1, y1;
+    int16_t x1, y1;
     uint16_t w, h;
 
     String dayOfWeek = dayStr(currentTime.Wday);
@@ -182,8 +193,8 @@ static void display_watchface(bool partial_refresh) {
 
     display.setFont(&DSEG7_Classic_Bold_25);
     display.setCursor(5, 120);
-    if(currentTime.Day < 10){
-    display.print("0");
+    if (currentTime.Day < 10) {
+        display.print("0");
     }
     display.println(currentTime.Day);
 
@@ -196,34 +207,35 @@ static void display_watchface(bool partial_refresh) {
     // =================================
     // Draw Weather
     WeatherData data = get_weather_data();
-    //const unsigned char* weatherIcon = sunny;
+    // const unsigned char* weatherIcon = sunny;
     display.setFont(&DSEG7_Classic_Bold_25);
     display.setCursor(5, 150);
     display.print(data.temperature + String(" C"));
-    //display.drawBitmap(165, 110, celsius, 26, 20, GxEPD_BLACK);
+    // display.drawBitmap(165, 110, celsius, 26, 20, GxEPD_BLACK);
 
     ////https://openweathermap.org/weather-conditions
-    //if (data.weather_condition_code > 801) {//Cloudy
-    //    weatherIcon = cloudy;
-    //} else if (data.weather_condition_code == 802) {//Few Clouds
-    //    weatherIcon = cloudsun;
-    //} else if (data.weather_condition_code == 800) {//Clear
-    //    weatherIcon = sunny;
-    //} else if (data.weather_condition_code >=700) {//Atmosphere
-    //    weatherIcon = cloudy;
-    //} else if (data.weather_condition_code >=600) {//Snow
-    //    weatherIcon = snow;
-    //} else if (data.weather_condition_code >=500) {//Rain
-    //    weatherIcon = rain;
-    //} else if (data.weather_condition_code >=300) {//Drizzle
-    //    weatherIcon = rain;
-    //} else if (data.weather_condition_code >=200) {//Thunderstorm
-    //    weatherIcon = rain;
-    //}
+    // if (data.weather_condition_code > 801) {//Cloudy
+    //     weatherIcon = cloudy;
+    // } else if (data.weather_condition_code == 802) {//Few Clouds
+    //     weatherIcon = cloudsun;
+    // } else if (data.weather_condition_code == 800) {//Clear
+    //     weatherIcon = sunny;
+    // } else if (data.weather_condition_code >=700) {//Atmosphere
+    //     weatherIcon = cloudy;
+    // } else if (data.weather_condition_code >=600) {//Snow
+    //     weatherIcon = snow;
+    // } else if (data.weather_condition_code >=500) {//Rain
+    //     weatherIcon = rain;
+    // } else if (data.weather_condition_code >=300) {//Drizzle
+    //     weatherIcon = rain;
+    // } else if (data.weather_condition_code >=200) {//Thunderstorm
+    //     weatherIcon = rain;
+    // }
 
-    //const uint8_t WEATHER_ICON_WIDTH = 48;
-    //const uint8_t WEATHER_ICON_HEIGHT = 32;
-    //display.drawBitmap(145, 158, weatherIcon, WEATHER_ICON_WIDTH, WEATHER_ICON_HEIGHT, GxEPD_BLACK);
+    // const uint8_t WEATHER_ICON_WIDTH = 48;
+    // const uint8_t WEATHER_ICON_HEIGHT = 32;
+    // display.drawBitmap(145, 158, weatherIcon, WEATHER_ICON_WIDTH,
+    // WEATHER_ICON_HEIGHT, GxEPD_BLACK);
 
     // =================================
     // Draw Battery
@@ -266,7 +278,6 @@ static void run_unit_tests() {
         delta = time_delta_minutes(second, first);
         Serial.println(String("-2 == ") + String(delta));
 
-
         first.Year = 51;
         first.Month = 8;
         first.Day = 31;
@@ -292,20 +303,21 @@ static void run_unit_tests() {
 static void display_sleep_face() {
     display.fillScreen(GxEPD_WHITE);
     display.drawBitmap(0, 0, sleeeep, 200, 200, GxEPD_BLACK);
-    display.display(false); // full refresh
+    display.display(false);  // full refresh
 }
 
 void run_watch() {
-    esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause(); //get wake up reason
-    Wire.begin(SDA, SCL); //init i2c
+    esp_sleep_wakeup_cause_t wakeup_reason =
+        esp_sleep_get_wakeup_cause();  // get wake up reason
+    Wire.begin(SDA, SCL);              // init i2c
 
     switch (wakeup_reason) {
-        case ESP_SLEEP_WAKEUP_EXT0: // RTC Alarm
+        case ESP_SLEEP_WAKEUP_EXT0:  // RTC Alarm
             watch_init();
             update_from_internet_if_required();
             display_watchface(true);
             break;
-        case ESP_SLEEP_WAKEUP_EXT1: // Button press
+        case ESP_SLEEP_WAKEUP_EXT1:  // Button press
         {
             watch_init();
             Button b = get_next_button();
@@ -341,9 +353,9 @@ void run_watch() {
     const int sleep_hour = 1;
     const int sleep_minute = 0;
     const tmElements_t current_time = get_date_time();
-    if ( (current_time.Hour == sleep_hour &&
-            current_time.Minute == sleep_minute) ||
-            should_sleep) {
+    if ((current_time.Hour == sleep_hour &&
+         current_time.Minute == sleep_minute) ||
+        should_sleep) {
         display_sleep_face();
         disable_minute_alarm();
         was_asleep = true;
@@ -352,6 +364,4 @@ void run_watch() {
     deep_sleep();
 }
 
-void set_should_sleep() {
-    should_sleep = true;
-}
+void set_should_sleep() { should_sleep = true; }

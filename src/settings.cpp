@@ -2,18 +2,16 @@
 
 #include <Arduino.h>
 
-#include "watchy_display.h"
-#include <Fonts/FreeMonoBold9pt7b.h>
-#include "generic_menu.h"
 #include "button.h"
+#include "generic_menu.h"
 #include "generic_set_time.h"
+#include "watchy_display.h"
 
+#include <Fonts/FreeMonoBold9pt7b.h>
 
 RTC_DATA_ATTR settings_t settings;
 
-settings_t get_settings() {
-    return settings;
-}
+settings_t get_settings() { return settings; }
 
 static void draw_internet_update() {
     display.fillScreen(GxEPD_BLACK);
@@ -34,10 +32,7 @@ static void draw_internet_update() {
 static void handle_internet_update() {
     Button b = Button::NONE;
     while (1) {
-        if (b == Button::MENU ||
-            b == Button::UP ||
-            b == Button::DOWN) {
-
+        if (b == Button::MENU || b == Button::UP || b == Button::DOWN) {
             settings.internet_update = !settings.internet_update;
         }
         if (b == Button::BACK) break;
@@ -51,10 +46,14 @@ static void handle_reset_time() {
     generic_set_time(&settings.reset_hour, &settings.reset_minute);
 }
 
-static const char* menu_labels[] =
-    {"Internet Update", "Steps Reset Time", "====", "====", "====", "===="};
-static menu_handler_ptr menu_callbacks[] =
-    {handle_internet_update, handle_reset_time, null_menu, null_menu, null_menu, null_menu };
+static const char* menu_labels[] = {
+    "Internet Update", "Steps Reset Time", "====", "====", "====", "===="};
+static menu_handler_ptr menu_callbacks[] = {handle_internet_update,
+                                            handle_reset_time,
+                                            null_menu,
+                                            null_menu,
+                                            null_menu,
+                                            null_menu};
 
 void handle_settings_menu() {
     handle_generic_menu(menu_labels, menu_callbacks);

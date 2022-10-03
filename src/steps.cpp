@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-#include <bma.h>       // accelerometer
+#include <bma.h>  // accelerometer
 
 RTC_DATA_ATTR BMA423 sensor;
 RTC_DATA_ATTR int step_offset;
@@ -11,7 +11,8 @@ RTC_DATA_ATTR int daily_step_offset;
 static int daily_step_count;
 static int total_step_count;
 
-uint16_t _readRegister(uint8_t address, uint8_t reg, uint8_t *data, uint16_t len) {
+uint16_t _readRegister(uint8_t address, uint8_t reg, uint8_t *data,
+                       uint16_t len) {
     Wire.beginTransmission(address);
     Wire.write(reg);
     Wire.endTransmission();
@@ -23,16 +24,17 @@ uint16_t _readRegister(uint8_t address, uint8_t reg, uint8_t *data, uint16_t len
     return 0;
 }
 
-uint16_t _writeRegister(uint8_t address, uint8_t reg, uint8_t *data, uint16_t len) {
+uint16_t _writeRegister(uint8_t address, uint8_t reg, uint8_t *data,
+                        uint16_t len) {
     Wire.beginTransmission(address);
     Wire.write(reg);
     Wire.write(data, len);
-    return (0 !=  Wire.endTransmission());
+    return (0 != Wire.endTransmission());
 }
 
 void first_time_bma_config() {
     if (sensor.begin(_readRegister, _writeRegister, delay) == false) {
-        //fail to init BMA
+        // fail to init BMA
         return;
     }
 
@@ -63,7 +65,8 @@ void first_time_bma_config() {
     */
     cfg.range = BMA4_ACCEL_RANGE_2G;
     /*!
-        Bandwidth parameter, determines filter configuration, Optional parameters:
+        Bandwidth parameter, determines filter configuration, Optional
+       parameters:
             - BMA4_ACCEL_OSR4_AVG1
             - BMA4_ACCEL_OSR2_AVG2
             - BMA4_ACCEL_NORMAL_AVG4
@@ -89,7 +92,7 @@ void first_time_bma_config() {
     // Warning : Need to use feature, you must first enable the accelerometer
     sensor.enableAccel();
 
-    struct bma4_int_pin_config config ;
+    struct bma4_int_pin_config config;
     config.edge_ctrl = BMA4_LEVEL_TRIGGER;
     config.lvl = BMA4_ACTIVE_HIGH;
     config.od = BMA4_PUSH_PULL;
@@ -134,17 +137,11 @@ void update_steps(bool is_midnight) {
     daily_step_count = total_step_count + daily_step_offset;
 }
 
-int get_todays_steps() {
-    return daily_step_count;
-}
+int get_todays_steps() { return daily_step_count; }
 
-int get_total_steps() {
-    return total_step_count;
-}
+int get_total_steps() { return total_step_count; }
 
-int get_step_offset() {
-    return step_offset;
-}
+int get_step_offset() { return step_offset; }
 
 void set_step_offset(int new_step_offset) {
     step_offset = new_step_offset;

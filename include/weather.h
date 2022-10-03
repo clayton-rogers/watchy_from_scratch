@@ -2,7 +2,6 @@
 
 #include <Arduino.h>
 
-
 struct WeatherData {
     int8_t temperature;
     int16_t weather_condition_code;

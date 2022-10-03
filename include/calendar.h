@@ -3,7 +3,6 @@
 #include <Arduino.h>
 #include <TimeLib.h>
 
-
 const int CALENDAR_EVENT_NAME_LENGTH = 40;
 struct calendar_event_t {
     char name[CALENDAR_EVENT_NAME_LENGTH];

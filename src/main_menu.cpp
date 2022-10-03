@@ -2,22 +2,21 @@
 
 #include <Arduino.h>
 
-#include "generic_menu.h"
-#include "button.h"
-#include "steps.h"
-#include "watchy_display.h"
-#include "datetime_utils.h"
-#include "clock.h"
-#include "pin_def.h"
 #include "battery.h"
-#include "vibrate.h"
+#include "button.h"
+#include "clock.h"
+#include "datetime_utils.h"
+#include "generic_menu.h"
+#include "pin_def.h"
 #include "settings.h"
+#include "steps.h"
+#include "vibrate.h"
+#include "watchy_display.h"
 #include "watchy_main.h"
 
-#include <Fonts/FreeMonoBold9pt7b.h> // Menu
-#include <DSEG7_Classic_Bold_53.h> // Time
-#include "DSEG7_Classic_Bold_25.h" // Date
-
+#include <DSEG7_Classic_Bold_53.h>    // Time
+#include <Fonts/FreeMonoBold9pt7b.h>  // Menu
+#include "DSEG7_Classic_Bold_25.h"    // Date
 
 // ******************************************************** //
 // GLOBALS
@@ -61,22 +60,23 @@ void draw_check_battery(Battery_Screen screen) {
 }
 
 void handle_check_battery() {
-
     Button b = Button::NONE;
     Battery_Screen screen = Battery_Screen::READING;
     Battery_Screen next_screen = Battery_Screen::NONE;
     while (1) {
         if (screen == Battery_Screen::READING) {
-            if (b == Button::MENU) next_screen = Battery_Screen::WAITING_FOR_CHARGE;
-            if (b == Button::BACK) break; // exit battery menu
-            if (b == Button::UP)   set_adc_cal(get_adc_cal() + 0.01f);
+            if (b == Button::MENU)
+                next_screen = Battery_Screen::WAITING_FOR_CHARGE;
+            if (b == Button::BACK) break;  // exit battery menu
+            if (b == Button::UP) set_adc_cal(get_adc_cal() + 0.01f);
             if (b == Button::DOWN) set_adc_cal(get_adc_cal() - 0.01f);
         }
         if (screen == Battery_Screen::WAITING_FOR_CHARGE) {
             if (b == Button::MENU) {
                 // Do the auto calibration
-                // We assume that the charging circuit accurately charges to 4.20 V
-                set_adc_cal(0.0f); // clear any current calibration
+                // We assume that the charging circuit accurately charges
+                // to 4.20 V
+                set_adc_cal(0.0f);  // clear any current calibration
                 float voltage = get_battery_voltage();
                 set_adc_cal(4.20f - voltage);
                 next_screen = Battery_Screen::READING;
@@ -115,7 +115,7 @@ static void draw_set_time(tmElements_t time, int index) {
     display.setFont(&DSEG7_Classic_Bold_53);
 
     display.setCursor(5, 80);
-    if(time.Hour < 10){
+    if (time.Hour < 10) {
         display.print("0");
     }
     display.print(time.Hour);
@@ -123,7 +123,7 @@ static void draw_set_time(tmElements_t time, int index) {
     display.print(":");
 
     display.setCursor(108, 80);
-    if(time.Minute < 10){
+    if (time.Minute < 10) {
         display.print("0");
     }
     display.print(time.Minute);
@@ -134,14 +134,14 @@ static void draw_set_time(tmElements_t time, int index) {
 
     display.print("/");
 
-    if(time.Month < 10){
+    if (time.Month < 10) {
         display.print("0");
     }
     display.print(time.Month);
 
     display.print("/");
 
-    if(time.Day < 10){
+    if (time.Day < 10) {
         display.print("0");
     }
     display.print(time.Day);
@@ -160,7 +160,6 @@ static void draw_set_time(tmElements_t time, int index) {
 }
 
 static void handle_set_time() {
-
     Button b = Button::NONE;
     tmElements_t new_time = get_date_time();
     new_time.Second = 0;
@@ -184,9 +183,9 @@ static void handle_set_time() {
         }
         if (b == Button::BACK) {
             if (edit_index == Edit_Index::HOUR) {
-                break; // exit without setting time
+                break;  // exit without setting time
             }
-            edit_index = (Edit_Index)((int)(edit_index) - 1);
+            edit_index = (Edit_Index)((int)(edit_index)-1);
         }
         if (b == Button::UP || b == Button::DOWN) {
             int inc = 0;
@@ -196,12 +195,23 @@ static void handle_set_time() {
                 inc = -1;
             }
             switch (edit_index) {
-                case Edit_Index::HOUR:   new_time.Hour+=inc; break;
-                case Edit_Index::MINUTE: new_time.Minute+=inc; break;
-                case Edit_Index::YEAR:   new_time.Year+=inc; break;
-                case Edit_Index::MONTH:  new_time.Month+=inc; break;
-                case Edit_Index::DAY:    new_time.Day+=inc; break;
-                case Edit_Index::MAX: break;
+                case Edit_Index::HOUR:
+                    new_time.Hour += inc;
+                    break;
+                case Edit_Index::MINUTE:
+                    new_time.Minute += inc;
+                    break;
+                case Edit_Index::YEAR:
+                    new_time.Year += inc;
+                    break;
+                case Edit_Index::MONTH:
+                    new_time.Month += inc;
+                    break;
+                case Edit_Index::DAY:
+                    new_time.Day += inc;
+                    break;
+                case Edit_Index::MAX:
+                    break;
             }
             normalize_datetime(&new_time);
         }
@@ -225,10 +235,10 @@ static void draw_set_steps(const int steps, const int index) {
 
     // Print the actual step count with leadin zeros
     display.setFont(&DSEG7_Classic_Bold_25);
-    display.setCursor(20,80);
+    display.setCursor(20, 80);
 
     int temp_steps = steps / 10;
-    for (int i = 0; i < STEPS_WIDTH-1; ++i) {
+    for (int i = 0; i < STEPS_WIDTH - 1; ++i) {
         if (temp_steps == 0) {
             display.print("0");
         } else {
@@ -238,7 +248,7 @@ static void draw_set_steps(const int steps, const int index) {
     display.print(steps);
 
     // Print the index indicator
-    const int x_offset[] = { 30, 50, 75, 95, 115 };
+    const int x_offset[] = {30, 50, 75, 95, 115};
     const int y = 90;
     const int x = x_offset[index];
 
@@ -263,13 +273,13 @@ static void handle_set_steps() {
             index++;
             if (index == STEPS_WIDTH) {
                 set_step_offset(local_steps);
-                break; // save and exit
+                break;  // save and exit
             }
         }
         if (b == Button::BACK) {
             index--;
             if (index == -1) {
-                break; // exit steps menu
+                break;  // exit steps menu
             }
         }
         if (b == Button::UP || b == Button::DOWN) {
@@ -296,7 +306,7 @@ static void handle_sleep() {
 
     display.fillScreen(GxEPD_BLACK);
     display.setTextColor(GxEPD_WHITE);
-    display.setCursor(0,30);
+    display.setCursor(0, 30);
     display.print("Will Sleep!");
     display.display(true);
 
@@ -305,11 +315,13 @@ static void handle_sleep() {
 
 // ******************************************************** //
 // Menu
-static const char* menu_labels[] =
-    {"Check Battery", "Settings", "Set Time", "Set Steps", "Vibrate Motor", "Sleep",};
-static menu_handler_ptr menu_callbacks[] =
-    {handle_check_battery, handle_settings_menu, handle_set_time, handle_set_steps, handle_vibrate, handle_sleep, };
+static const char* menu_labels[] = {
+    "Check Battery", "Settings",      "Set Time",
+    "Set Steps",     "Vibrate Motor", "Sleep",
+};
+static menu_handler_ptr menu_callbacks[] = {
+    handle_check_battery, handle_settings_menu, handle_set_time,
+    handle_set_steps,     handle_vibrate,       handle_sleep,
+};
 
-void handle_main_menu() {
-    handle_generic_menu(menu_labels, menu_callbacks);
-}
+void handle_main_menu() { handle_generic_menu(menu_labels, menu_callbacks); }

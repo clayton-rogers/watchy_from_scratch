@@ -2,8 +2,6 @@
 
 #include "watchy_main.h"
 
-void setup(){
-    run_watch();
-}
+void setup() { run_watch(); }
 
-void loop(){}
+void loop() {}

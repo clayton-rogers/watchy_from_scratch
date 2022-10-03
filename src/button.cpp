@@ -1,6 +1,7 @@
 #include "button.h"
 
 #include <Arduino.h>
+
 #include "pin_def.h"
 
 static bool first = true;
@@ -15,7 +16,7 @@ Button get_next_button() {
         Button b;
         if (wakeupBit & MENU_BTN_MASK) b = Button::MENU;
         if (wakeupBit & BACK_BTN_MASK) b = Button::BACK;
-        if (wakeupBit & UP_BTN_MASK)   b = Button::UP;
+        if (wakeupBit & UP_BTN_MASK) b = Button::UP;
         if (wakeupBit & DOWN_BTN_MASK) b = Button::DOWN;
 
         first = false;
@@ -24,7 +25,7 @@ Button get_next_button() {
     while (1) {
         if (digitalRead(MENU_BTN_PIN)) return Button::MENU;
         if (digitalRead(BACK_BTN_PIN)) return Button::BACK;
-        if (digitalRead(UP_BTN_PIN))   return Button::UP;
+        if (digitalRead(UP_BTN_PIN)) return Button::UP;
         if (digitalRead(DOWN_BTN_PIN)) return Button::DOWN;
     }
 }

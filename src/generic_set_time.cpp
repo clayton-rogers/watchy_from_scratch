@@ -1,9 +1,9 @@
 #include "generic_set_time.h"
 
-#include "watchy_display.h"
-#include <DSEG7_Classic_Bold_53.h> // Time
 #include "button.h"
+#include "watchy_display.h"
 
+#include <DSEG7_Classic_Bold_53.h>  // Time
 
 static void draw_time(const int* hour, const int* minute, int digit_select) {
     display.fillScreen(GxEPD_BLACK);
@@ -14,7 +14,7 @@ static void draw_time(const int* hour, const int* minute, int digit_select) {
     display.printf("%02d:%02d", *hour, *minute);
 
     const int y = 100;
-    const int x_offsets[]  = { 25, 75, 125, 175 };
+    const int x_offsets[] = {25, 75, 125, 175};
     const int x = x_offsets[digit_select];
     display.fillTriangle(x, y, x - 10, y + 10, x + 10, y + 10, GxEPD_WHITE);
 
@@ -53,25 +53,33 @@ void generic_set_time(int* hour, int* minute) {
         if (b == Button::UP) {
             switch (digit_sel) {
                 case 0:
-                    *hour += 10; break;
+                    *hour += 10;
+                    break;
                 case 1:
-                    *hour +=  1; break;
+                    *hour += 1;
+                    break;
                 case 2:
-                    *minute += 10; break;
+                    *minute += 10;
+                    break;
                 case 3:
-                    *minute +=  1; break;
+                    *minute += 1;
+                    break;
             }
         }
         if (b == Button::DOWN) {
             switch (digit_sel) {
                 case 0:
-                    *hour -= 10; break;
+                    *hour -= 10;
+                    break;
                 case 1:
-                    *hour -=  1; break;
+                    *hour -= 1;
+                    break;
                 case 2:
-                    *minute -= 10; break;
+                    *minute -= 10;
+                    break;
                 case 3:
-                    *minute -=  1; break;
+                    *minute -= 1;
+                    break;
             }
         }
         if (b == Button::BACK) break;

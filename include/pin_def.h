@@ -1,6 +1,6 @@
 #pragma once
 
-//pins
+// pins
 #define SDA 21
 #define SCL 22
 #define ADC_PIN 33
@@ -19,4 +19,4 @@
 #define UP_BTN_MASK GPIO_SEL_32
 #define DOWN_BTN_MASK GPIO_SEL_4
 #define ACC_INT_MASK GPIO_SEL_14
-#define BTN_PIN_MASK MENU_BTN_MASK|BACK_BTN_MASK|UP_BTN_MASK|DOWN_BTN_MASK
+#define BTN_PIN_MASK MENU_BTN_MASK | BACK_BTN_MASK | UP_BTN_MASK | DOWN_BTN_MASK
