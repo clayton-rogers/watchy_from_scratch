@@ -2,3 +2,4 @@
 .vscode/
 
 API_KEYS.h
+compile_commands.json
